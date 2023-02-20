@@ -1,3 +1,5 @@
+use rand::seq::SliceRandom;
+use rand::{thread_rng, Rng, RngCore};
 use std::fmt::{Display, Formatter};
 use strum::{EnumIter, IntoEnumIterator};
 
@@ -98,6 +100,13 @@ impl Card {
         }
         cards
     }
+
+    pub fn shuffled_deck() -> Vec<Self> {
+        let mut rng = thread_rng();
+        let mut deck = Self::ordered_deck();
+        deck.shuffle(&mut rng);
+        deck
+    }
 }
 
 #[cfg(test)]
@@ -115,6 +124,29 @@ mod tests {
     fn test_ordered_deck() {
         const PRINT: bool = true;
         let cards = Card::ordered_deck();
+        if PRINT {
+            print!("Black: ");
+            for card in &cards {
+                if !card.suit.is_red() {
+                    print!("{card} ");
+                }
+            }
+            println!();
+            print!("Red:   ");
+            for card in &cards {
+                if card.suit.is_red() {
+                    print!("{card} ");
+                }
+            }
+            println!();
+        }
+        assert_eq!(cards.len(), 52);
+    }
+
+    #[test]
+    fn test_shuffled_deck() {
+        const PRINT: bool = true;
+        let cards = Card::shuffled_deck();
         if PRINT {
             print!("Black: ");
             for card in &cards {
