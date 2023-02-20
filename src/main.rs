@@ -1,4 +1,5 @@
 mod cards;
+mod game_state;
 mod tui;
 
 fn main() {
