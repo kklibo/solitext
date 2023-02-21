@@ -1,5 +1,5 @@
 use crate::game_state::GameState;
-use std::io::{stdin, stdout, Stdin, Stdout, Write};
+use std::io::{stdin, stdout, Stdout, Write};
 use termion::event::Key;
 use termion::input::TermRead;
 use termion::raw::{IntoRawMode, RawTerminal};
@@ -14,19 +14,19 @@ enum Selection {
 
 impl Selection {
     pub fn move_right(&mut self) {
-        *self = match self {
+        *self = match *self {
             Self::Deck => Self::Column {
                 index: 0,
                 card_count: 0,
             },
-            Self::Column { index, card_count } if *index < GameState::COLUMN_COUNT - 1 => {
+            Self::Column { index, card_count } if index < GameState::COLUMN_COUNT - 1 => {
                 Self::Column {
-                    index: *index + 1,
-                    card_count: *card_count,
+                    index: index + 1,
+                    card_count,
                 }
             }
             Self::Column { .. } => Self::Pile { index: 0 },
-            Self::Pile { index } => Self::Pile { index: *index },
+            x @ Self::Pile { .. } => x,
         };
     }
 }

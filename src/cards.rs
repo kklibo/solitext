@@ -1,5 +1,5 @@
 use rand::seq::SliceRandom;
-use rand::{thread_rng, Rng, RngCore};
+use rand::thread_rng;
 use std::fmt::{Display, Formatter};
 use strum::{EnumIter, IntoEnumIterator};
 

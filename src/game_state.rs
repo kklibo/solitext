@@ -26,11 +26,11 @@ impl GameState {
 
     pub fn init(mut deck: Vec<Card>) -> Self {
         let mut columns: [CardColumn; Self::COLUMN_COUNT as usize] = Default::default();
-        let mut card_piles: [CardPile; Self::CARD_PILES_COUNT as usize] = Default::default();
+        let card_piles: [CardPile; Self::CARD_PILES_COUNT as usize] = Default::default();
 
-        for i in 0..columns.len() {
+        for (i, column) in columns.iter_mut().enumerate() {
             for _ in 0..=i {
-                columns[i].0.push((
+                column.0.push((
                     deck.pop().expect("deck should have enough cards to deal"),
                     CardState::FaceDown,
                 ));
