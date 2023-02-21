@@ -13,7 +13,30 @@ enum Selection {
 }
 
 impl Selection {
+    pub fn move_left(&mut self) {
+        #[allow(clippy::assertions_on_constants)]
+        {
+            assert!(GameState::COLUMN_COUNT > 0);
+        }
+        *self = match *self {
+            x @ Self::Deck => x,
+            Self::Column { index, card_count } if index > 0 => Self::Column {
+                index: index - 1,
+                card_count,
+            },
+            Self::Column { .. } => Self::Deck,
+            Self::Pile { .. } => Selection::Column {
+                index: GameState::COLUMN_COUNT - 1,
+                card_count: 0,
+            },
+        };
+    }
+
     pub fn move_right(&mut self) {
+        #[allow(clippy::assertions_on_constants)]
+        {
+            assert!(GameState::COLUMN_COUNT > 0);
+        }
         *self = match *self {
             Self::Deck => Self::Column {
                 index: 0,
@@ -175,6 +198,7 @@ impl Ui {
 
         for c in stdin.keys() {
             match c.unwrap() {
+                Key::Left => self.cursor.move_left(),
                 Key::Right => self.cursor.move_right(),
                 Key::Esc => break,
                 Key::Ctrl('c') => break,
