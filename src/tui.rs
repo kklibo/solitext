@@ -92,7 +92,7 @@ impl Ui {
         self.display_columns(game_state);
         self.display_piles(game_state);
         self.display_column_selection_cursor();
-        self.display_card_selection_cursor();
+        self.display_card_selection_cursor(game_state);
     }
 
     fn selection_col(&mut self) -> u16 {
@@ -119,38 +119,58 @@ impl Ui {
         .unwrap();
     }
 
-    fn display_card_selection_cursor(&mut self) {
+    fn display_card_selection_cursor(&mut self, game_state: &GameState) {
         let col = self.selection_col();
 
         match self.cursor {
             Selection::Deck => self.draw_deck_selection_cursor(col, Self::DECK_INIT_ROW),
+            Selection::Column { index, card_count } => {
+                self.draw_card_column_selection_cursor(game_state, col, index, card_count)
+            }
             _ => (),
         };
+        writeln!(self.stdout, "{}", color::Bg(color::Reset),).unwrap();
     }
 
     fn draw_deck_selection_cursor(&mut self, col: u16, row: u16) {
+        self.draw_selection_char(col + 2, row, "◂");
+        self.draw_selection_char(col - 2, row, "▸");
+    }
+
+    fn draw_card_column_selection_cursor(
+        &mut self,
+        game_state: &GameState,
+        col: u16,
+        index: u8,
+        card_count: u8,
+    ) {
+        let upper = Self::COLUMNS_INIT_ROW
+            + Self::COLUMNS_ROW_STEP * (game_state.columns[index as usize].0.len()) as u16;
+        let lower = upper
+            .checked_sub(card_count as u16)
+            .expect("should not select nonexistent cards");
+
+        for row in lower..upper {
+            self.draw_selection_char(col - 1, row, "[");
+            self.draw_selection_char(col + 3, row, "]");
+        }
+    }
+
+    fn draw_selection_char(&mut self, col: u16, row: u16, ch: &str) {
         writeln!(
             self.stdout,
-            "{}{}{}◂",
-            cursor::Goto(col + 2, row),
+            "{}{}{}{ch}",
+            cursor::Goto(col, row),
             color::Fg(color::Reset),
             color::Bg(color::LightGreen),
         )
         .unwrap();
-        writeln!(
-            self.stdout,
-            "{}{}{}▸",
-            cursor::Goto(col - 2, row),
-            color::Fg(color::Reset),
-            color::Bg(color::LightGreen),
-        )
-        .unwrap();
-        writeln!(self.stdout, "{}", color::Bg(color::Reset),).unwrap();
     }
 
     const COLUMNS_INIT_COL: u16 = 8;
     const COLUMNS_INIT_ROW: u16 = 2;
     const COLUMNS_COL_STEP: u16 = 5;
+    const COLUMNS_ROW_STEP: u16 = 1;
     fn display_columns(&mut self, game_state: &GameState) {
         let (init_col, init_row) = (Self::COLUMNS_INIT_COL, Self::COLUMNS_INIT_ROW);
         let mut col = init_col;
@@ -167,7 +187,7 @@ impl Ui {
                 )
                 .unwrap();
 
-                row += 1;
+                row += Self::COLUMNS_ROW_STEP;
             }
             col += Self::COLUMNS_COL_STEP;
         }
