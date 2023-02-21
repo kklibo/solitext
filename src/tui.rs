@@ -13,6 +13,7 @@ enum Selection {
 }
 
 impl Selection {
+    /// for the Left key
     pub fn move_left(&mut self) {
         #[allow(clippy::assertions_on_constants)]
         {
@@ -32,6 +33,7 @@ impl Selection {
         };
     }
 
+    /// for the Right key
     pub fn move_right(&mut self) {
         #[allow(clippy::assertions_on_constants)]
         {
@@ -53,6 +55,7 @@ impl Selection {
         };
     }
 
+    /// for the Up key
     pub fn select_up(&mut self, game_state: &GameState) {
         *self = match *self {
             x @ Self::Deck => x,
@@ -66,6 +69,22 @@ impl Selection {
             }
             x @ Self::Column { .. } => x,
             Self::Pile { index } if index > 0 => Self::Pile { index: index - 1 },
+            x @ Self::Pile { .. } => x,
+        }
+    }
+
+    /// for the Down key
+    pub fn select_down(&mut self, game_state: &GameState) {
+        *self = match *self {
+            x @ Self::Deck => x,
+            Self::Column { index, card_count } if (card_count as usize) > 0 => Self::Column {
+                index,
+                card_count: card_count - 1,
+            },
+            x @ Self::Column { .. } => x,
+            Self::Pile { index } if (index as usize) < game_state.card_piles.len() - 1 => {
+                Self::Pile { index: index + 1 }
+            }
             x @ Self::Pile { .. } => x,
         }
     }
@@ -279,6 +298,7 @@ impl Ui {
                 Key::Left => self.cursor.move_left(),
                 Key::Right => self.cursor.move_right(),
                 Key::Up => self.cursor.select_up(game_state),
+                Key::Down => self.cursor.select_down(game_state),
                 Key::Esc => break,
                 Key::Ctrl('c') => break,
                 _ => {}
