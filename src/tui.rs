@@ -17,7 +17,12 @@ impl Ui {
     }
 
     fn display_game_state(&mut self, game_state: &GameState) {
-        let (init_col, init_row) = (3u16, 2u16);
+        self.display_columns(game_state);
+        self.display_piles(game_state);
+    }
+
+    fn display_columns(&mut self, game_state: &GameState) {
+        let (init_col, init_row) = (8u16, 2u16);
         let mut col = init_col;
         for column in &game_state.columns {
             let mut row = init_row;
@@ -35,6 +40,30 @@ impl Ui {
                 row += 1;
             }
             col += 5;
+        }
+    }
+
+    fn display_piles(&mut self, game_state: &GameState) {
+        let (init_col, init_row) = (48u16, 2u16);
+        let mut row = init_row;
+        for pile in &game_state.card_piles {
+            let top = if let Some(card) = pile.0.last() {
+                card.to_string()
+            } else {
+                "_".to_string()
+            };
+
+            writeln!(
+                self.stdout,
+                "{}{}{}{}",
+                cursor::Goto(init_col, row),
+                cursor::Hide,
+                color::Fg(color::Green),
+                top
+            )
+            .unwrap();
+
+            row += 2;
         }
     }
 
