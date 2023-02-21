@@ -17,6 +17,7 @@ impl Ui {
     }
 
     fn display_game_state(&mut self, game_state: &GameState) {
+        self.display_deck(game_state);
         self.display_columns(game_state);
         self.display_piles(game_state);
     }
@@ -65,6 +66,26 @@ impl Ui {
 
             row += 2;
         }
+    }
+
+    fn display_deck(&mut self, game_state: &GameState) {
+        let (init_col, init_row) = (2u16, 2u16);
+
+        let top = if let Some(card) = game_state.deck.last() {
+            card.to_string()
+        } else {
+            "_".to_string()
+        };
+
+        writeln!(
+            self.stdout,
+            "{}{}{}{}",
+            cursor::Goto(init_col, init_row),
+            cursor::Hide,
+            color::Fg(color::Green),
+            top
+        )
+        .unwrap();
     }
 
     pub fn run(&mut self, game_state: &mut GameState) {
