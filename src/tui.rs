@@ -127,7 +127,7 @@ impl Ui {
             Selection::Column { index, card_count } => {
                 self.draw_card_column_selection_cursor(game_state, col, index, card_count)
             }
-            _ => (),
+            Selection::Pile { index } => self.draw_pile_selection_cursor(col, index),
         };
         writeln!(self.stdout, "{}", color::Bg(color::Reset),).unwrap();
     }
@@ -154,6 +154,12 @@ impl Ui {
             self.draw_selection_char(col - 1, row, "[");
             self.draw_selection_char(col + 3, row, "]");
         }
+    }
+
+    fn draw_pile_selection_cursor(&mut self, col: u16, index: u8) {
+        let row = Self::PILES_INIT_ROW + Self::PILES_ROW_STEP * index as u16;
+        self.draw_selection_char(col - 1, row, "[");
+        self.draw_selection_char(col + 3, row, "]");
     }
 
     fn draw_selection_char(&mut self, col: u16, row: u16, ch: &str) {
@@ -195,6 +201,7 @@ impl Ui {
 
     const PILES_INIT_COL: u16 = 48;
     const PILES_INIT_ROW: u16 = 2;
+    const PILES_ROW_STEP: u16 = 2;
     fn display_piles(&mut self, game_state: &GameState) {
         let (init_col, init_row) = (Self::PILES_INIT_COL, Self::PILES_INIT_ROW);
         let mut row = init_row;
@@ -202,7 +209,7 @@ impl Ui {
             let top = if let Some(card) = pile.0.last() {
                 card.to_string()
             } else {
-                "_".to_string()
+                " _".to_string()
             };
 
             writeln!(
@@ -215,7 +222,7 @@ impl Ui {
             )
             .unwrap();
 
-            row += 2;
+            row += Self::PILES_ROW_STEP;
         }
     }
 
