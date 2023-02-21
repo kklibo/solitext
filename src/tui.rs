@@ -52,6 +52,23 @@ impl Selection {
             x @ Self::Pile { .. } => x,
         };
     }
+
+    pub fn select_up(&mut self, game_state: &GameState) {
+        *self = match *self {
+            x @ Self::Deck => x,
+            Self::Column { index, card_count }
+                if (card_count as usize) < game_state.columns[index as usize].0.len() =>
+            {
+                Self::Column {
+                    index,
+                    card_count: card_count + 1,
+                }
+            }
+            x @ Self::Column { .. } => x,
+            Self::Pile { index } if index > 0 => Self::Pile { index: index - 1 },
+            x @ Self::Pile { .. } => x,
+        }
+    }
 }
 
 pub struct Ui {
@@ -74,18 +91,23 @@ impl Ui {
         self.display_deck(game_state);
         self.display_columns(game_state);
         self.display_piles(game_state);
-        self.display_selection_cursor();
+        self.display_column_selection_cursor();
+        self.display_card_selection_cursor();
     }
 
-    const CURSOR_ROW: u16 = 10;
-    fn display_selection_cursor(&mut self) {
-        let col = match self.cursor {
+    fn selection_col(&mut self) -> u16 {
+        match self.cursor {
             Selection::Deck => Self::DECK_INIT_COL,
             Selection::Column { index, .. } => {
                 Self::COLUMNS_INIT_COL + (index as u16) * Self::COLUMNS_COL_STEP
             }
             Selection::Pile { .. } => Self::PILES_INIT_COL,
-        };
+        }
+    }
+
+    const CURSOR_ROW: u16 = 10;
+    fn display_column_selection_cursor(&mut self) {
+        let col = self.selection_col();
 
         writeln!(
             self.stdout,
@@ -95,6 +117,35 @@ impl Ui {
             color::Fg(color::Blue),
         )
         .unwrap();
+    }
+
+    fn display_card_selection_cursor(&mut self) {
+        let col = self.selection_col();
+
+        match self.cursor {
+            Selection::Deck => self.draw_deck_selection_cursor(col, Self::DECK_INIT_ROW),
+            _ => (),
+        };
+    }
+
+    fn draw_deck_selection_cursor(&mut self, col: u16, row: u16) {
+        writeln!(
+            self.stdout,
+            "{}{}{}◂",
+            cursor::Goto(col + 2, row),
+            color::Fg(color::Reset),
+            color::Bg(color::LightGreen),
+        )
+        .unwrap();
+        writeln!(
+            self.stdout,
+            "{}{}{}▸",
+            cursor::Goto(col - 2, row),
+            color::Fg(color::Reset),
+            color::Bg(color::LightGreen),
+        )
+        .unwrap();
+        writeln!(self.stdout, "{}", color::Bg(color::Reset),).unwrap();
     }
 
     const COLUMNS_INIT_COL: u16 = 8;
@@ -200,6 +251,7 @@ impl Ui {
             match c.unwrap() {
                 Key::Left => self.cursor.move_left(),
                 Key::Right => self.cursor.move_right(),
+                Key::Up => self.cursor.select_up(game_state),
                 Key::Esc => break,
                 Key::Ctrl('c') => break,
                 _ => {}
