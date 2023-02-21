@@ -12,6 +12,25 @@ enum Selection {
     Pile { index: u8 },
 }
 
+impl Selection {
+    pub fn move_right(&mut self) {
+        *self = match self {
+            Self::Deck => Self::Column {
+                index: 0,
+                card_count: 0,
+            },
+            Self::Column { index, card_count } if *index < GameState::COLUMN_COUNT - 1 => {
+                Self::Column {
+                    index: *index + 1,
+                    card_count: *card_count,
+                }
+            }
+            Self::Column { .. } => Self::Pile { index: 0 },
+            Self::Pile { index } => Self::Pile { index: *index },
+        };
+    }
+}
+
 pub struct Ui {
     stdout: RawTerminal<Stdout>,
     cursor: Selection,
@@ -26,6 +45,8 @@ impl Ui {
     }
 
     fn display_game_state(&mut self, game_state: &GameState) {
+        writeln!(self.stdout, "{}", clear::All,).unwrap();
+
         self.display_deck(game_state);
         self.display_columns(game_state);
         self.display_piles(game_state);
@@ -141,10 +162,12 @@ impl Ui {
 
         for c in stdin.keys() {
             match c.unwrap() {
+                Key::Right => self.cursor.move_right(),
                 Key::Esc => break,
                 Key::Ctrl('c') => break,
                 _ => {}
             }
+            self.display_game_state(game_state);
             self.stdout.flush().unwrap();
         }
 
