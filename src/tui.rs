@@ -47,6 +47,7 @@ impl Ui {
     fn display_game_state(&mut self, game_state: &GameState) {
         writeln!(self.stdout, "{}", clear::All,).unwrap();
 
+        self.display_info(game_state);
         self.display_deck(game_state);
         self.display_columns(game_state);
         self.display_piles(game_state);
@@ -146,18 +147,30 @@ impl Ui {
         .unwrap();
     }
 
-    pub fn run(&mut self, game_state: &mut GameState) {
-        let stdin = stdin();
+    fn display_info(&mut self, game_state: &GameState) {
         writeln!(
             self.stdout,
-            "{}{}{}{}Solitext",
-            clear::All,
+            "{}{}{}Solitext",
             cursor::Goto(1, 1),
             cursor::Hide,
             color::Fg(color::LightYellow),
         )
         .unwrap();
+    }
 
+    fn restore_terminal(&mut self) {
+        write!(
+            self.stdout,
+            "{}{}{}",
+            clear::All,
+            cursor::Goto(1, 1),
+            cursor::Show,
+        )
+        .unwrap();
+    }
+
+    pub fn run(&mut self, game_state: &mut GameState) {
+        let stdin = stdin();
         self.display_game_state(game_state);
 
         for c in stdin.keys() {
@@ -171,6 +184,6 @@ impl Ui {
             self.stdout.flush().unwrap();
         }
 
-        write!(self.stdout, "{}", cursor::Show).unwrap();
+        self.restore_terminal();
     }
 }
