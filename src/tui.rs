@@ -262,9 +262,8 @@ impl Ui {
 
         writeln!(
             self.stdout,
-            "{}{}{}{}",
+            "{}{}{}",
             cursor::Goto(init_col, init_row),
-            cursor::Hide,
             color::Fg(color::Green),
             top
         )
@@ -274,12 +273,22 @@ impl Ui {
     fn display_info(&mut self, game_state: &GameState) {
         writeln!(
             self.stdout,
-            "{}{}{}Solitext",
+            "{}{}Solitext",
             cursor::Goto(1, 1),
-            cursor::Hide,
             color::Fg(color::LightYellow),
         )
         .unwrap();
+        writeln!(
+            self.stdout,
+            "{}{}Space: ",
+            cursor::Goto(2, Self::CURSOR_ROW + 2),
+            color::Fg(color::LightBlack),
+        )
+        .unwrap();
+    }
+
+    fn set_up_terminal(&mut self) {
+        writeln!(self.stdout, "{}", cursor::Hide).unwrap();
     }
 
     fn restore_terminal(&mut self) {
@@ -293,17 +302,22 @@ impl Ui {
         .unwrap();
     }
 
+    fn cards_action(&mut self, game_state: &mut GameState) {
+        self.selected = Some(self.cursor)
+    }
+
     pub fn run(&mut self, game_state: &mut GameState) {
-        let stdin = stdin();
+        self.set_up_terminal();
         self.display_game_state(game_state);
 
+        let stdin = stdin();
         for c in stdin.keys() {
             match c.unwrap() {
                 Key::Left => self.cursor.move_left(),
                 Key::Right => self.cursor.move_right(),
                 Key::Up => self.cursor.select_up(game_state),
                 Key::Down => self.cursor.select_down(game_state),
-                Key::Char(' ') => self.selected = Some(self.cursor),
+                Key::Char(' ') => self.cards_action(game_state),
                 Key::Esc => break,
                 Key::Ctrl('c') => break,
                 _ => {}
