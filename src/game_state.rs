@@ -8,16 +8,16 @@ pub enum CardState {
 }
 
 #[derive(Debug, Default, Clone, Eq, PartialEq)]
-pub struct CardColumn(Vec<(Card, CardState)>);
+pub struct CardColumn(pub Vec<(Card, CardState)>);
 
 #[derive(Debug, Default, Clone, Eq, PartialEq)]
-pub struct CardPile(Vec<Card>);
+pub struct CardPile(pub Vec<Card>);
 
 #[derive(Debug, Default, Clone, Eq, PartialEq)]
 pub struct GameState {
-    deck: Vec<Card>,
-    columns: [CardColumn; 7],
-    card_piles: [CardPile; 4],
+    pub deck: Vec<Card>,
+    pub columns: [CardColumn; 7],
+    pub card_piles: [CardPile; 4],
 }
 
 impl GameState {
