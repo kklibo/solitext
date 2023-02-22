@@ -20,6 +20,33 @@ impl Selection {
         }
     }
 
+    /// Is this selection in the same Deck, Column, or Pile as `other`?
+    /// (I.e.: are variant and index equal?)
+    pub fn same_collection(&self, other: Self) -> bool {
+        match self {
+            Self::Deck => matches!(other, Self::Deck),
+            Self::Column {
+                index: self_index, ..
+            } => {
+                if let Self::Column {
+                    index: other_index, ..
+                } = other
+                {
+                    *self_index == other_index
+                } else {
+                    false
+                }
+            }
+            Self::Pile { index: self_index } => {
+                if let Self::Pile { index: other_index } = other {
+                    *self_index == other_index
+                } else {
+                    false
+                }
+            }
+        }
+    }
+
     /// for the Left key
     pub fn move_left(&mut self) {
         #[allow(clippy::assertions_on_constants)]
@@ -327,5 +354,54 @@ impl Ui {
         }
 
         self.restore_terminal();
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_same_collection() {
+        assert!(!Selection::Deck.same_collection(Selection::Column {
+            index: 1,
+            card_count: 1
+        }));
+        assert!(!Selection::Column {
+            index: 1,
+            card_count: 1
+        }
+        .same_collection(Selection::Pile { index: 1 }));
+        assert!(!Selection::Pile { index: 1 }.same_collection(Selection::Deck));
+
+        assert!(Selection::Deck.same_collection(Selection::Deck));
+
+        assert!(Selection::Column {
+            index: 1,
+            card_count: 1
+        }
+        .same_collection(Selection::Column {
+            index: 1,
+            card_count: 1
+        }));
+        assert!(Selection::Column {
+            index: 1,
+            card_count: 2
+        }
+        .same_collection(Selection::Column {
+            index: 1,
+            card_count: 1
+        }));
+        assert!(!Selection::Column {
+            index: 2,
+            card_count: 1
+        }
+        .same_collection(Selection::Column {
+            index: 1,
+            card_count: 1
+        }));
+
+        assert!(Selection::Pile { index: 1 }.same_collection(Selection::Pile { index: 1 }));
+        assert!(!Selection::Pile { index: 2 }.same_collection(Selection::Pile { index: 1 }));
     }
 }
