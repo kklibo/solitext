@@ -14,11 +14,13 @@ enum Selection {
 }
 
 impl Selection {
-    fn card_column(index: u8) -> Selection {
-        Self::Column {
-            index,
-            card_count: 1,
-        }
+    fn card_column(index: u8, game_state: &GameState) -> Selection {
+        let card_count = if game_state.column_is_empty(index) {
+            0
+        } else {
+            1
+        };
+        Self::Column { index, card_count }
     }
 
     /// Is this selection in the same Deck, Column, or Pile as `other`?
@@ -58,29 +60,29 @@ impl Selection {
     }
 
     /// for the Left key
-    pub fn move_left(&mut self) {
+    pub fn move_left(&mut self, game_state: &GameState) {
         #[allow(clippy::assertions_on_constants)]
         {
             assert!(GameState::COLUMN_COUNT > 0);
         }
         *self = match *self {
             x @ Self::Deck => x,
-            Self::Column { index, .. } if index > 0 => Self::card_column(index - 1),
+            Self::Column { index, .. } if index > 0 => Self::card_column(index - 1, game_state),
             Self::Column { .. } => Self::Deck,
-            Self::Pile { .. } => Self::card_column(GameState::COLUMN_COUNT - 1),
+            Self::Pile { .. } => Self::card_column(GameState::COLUMN_COUNT - 1, game_state),
         };
     }
 
     /// for the Right key
-    pub fn move_right(&mut self) {
+    pub fn move_right(&mut self, game_state: &GameState) {
         #[allow(clippy::assertions_on_constants)]
         {
             assert!(GameState::COLUMN_COUNT > 0);
         }
         *self = match *self {
-            Self::Deck => Self::card_column(0),
+            Self::Deck => Self::card_column(0, game_state),
             Self::Column { index, .. } if index < GameState::COLUMN_COUNT - 1 => {
-                Self::card_column(index + 1)
+                Self::card_column(index + 1, game_state)
             }
             Self::Column { .. } => Self::Pile { index: 0 },
             x @ Self::Pile { .. } => x,
@@ -367,6 +369,8 @@ impl Ui {
 
                 let dest = self.cursor.selected_collection(game_state);
                 dest.receive(cards).expect("card receive should work");
+
+                self.selected = None;
             }
         } else {
             self.selected = Some(self.cursor)
@@ -380,11 +384,12 @@ impl Ui {
         let stdin = stdin();
         for c in stdin.keys() {
             match c.unwrap() {
-                Key::Left => self.cursor.move_left(),
-                Key::Right => self.cursor.move_right(),
+                Key::Left => self.cursor.move_left(game_state),
+                Key::Right => self.cursor.move_right(game_state),
                 Key::Up => self.cursor.select_up(game_state),
                 Key::Down => self.cursor.select_down(game_state),
                 Key::Char(' ') => self.cards_action(game_state),
+                Key::Char('x') => self.selected = None,
                 Key::Esc => break,
                 Key::Ctrl('c') => break,
                 _ => {}

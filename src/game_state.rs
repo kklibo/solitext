@@ -113,6 +113,14 @@ impl GameState {
             card_piles,
         }
     }
+
+    pub fn column_is_empty(&self, index: u8) -> bool {
+        self.columns
+            .get(index as usize)
+            .expect("column should exist")
+            .0
+            .is_empty()
+    }
 }
 
 #[cfg(test)]
