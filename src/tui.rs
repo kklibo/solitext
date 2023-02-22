@@ -1,3 +1,4 @@
+use crate::game_state::CardCollection;
 use crate::game_state::GameState;
 use std::io::{stdin, stdout, Stdout, Write};
 use termion::event::Key;
@@ -45,6 +46,15 @@ impl Selection {
                 }
             }
         }
+    }
+
+    /// Number of cards selected
+    pub fn card_count(&self) -> usize {
+        match self {
+            Self::Column { card_count, .. } => *card_count,
+            _ => 1,
+        }
+        .into()
     }
 
     /// for the Left key
@@ -108,6 +118,24 @@ impl Selection {
                 Self::Pile { index: index + 1 }
             }
             x @ Self::Pile { .. } => x,
+        }
+    }
+
+    /// Get the selected card collection
+    pub fn selected_collection<'a>(
+        &'a self,
+        game_state: &'a mut GameState,
+    ) -> &mut dyn CardCollection {
+        match self {
+            Self::Deck => &mut game_state.deck,
+            Self::Column { index, .. } => game_state
+                .columns
+                .get_mut(*index as usize)
+                .expect("selected card column should exist"),
+            Self::Pile { index } => game_state
+                .card_piles
+                .get_mut(*index as usize)
+                .expect("selected card pile should exist"),
         }
     }
 }
@@ -330,7 +358,19 @@ impl Ui {
     }
 
     fn cards_action(&mut self, game_state: &mut GameState) {
-        self.selected = Some(self.cursor)
+        if let Some(selected) = self.selected {
+            if !self.cursor.same_collection(selected) {
+                let src = selected.selected_collection(game_state);
+                let cards = src
+                    .take(selected.card_count())
+                    .expect("card take should work");
+
+                let dest = self.cursor.selected_collection(game_state);
+                dest.receive(cards).expect("card receive should work");
+            }
+        } else {
+            self.selected = Some(self.cursor)
+        }
     }
 
     pub fn run(&mut self, game_state: &mut GameState) {
@@ -360,6 +400,7 @@ impl Ui {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::cards::Card;
 
     #[test]
     fn test_same_collection() {
@@ -403,5 +444,11 @@ mod tests {
 
         assert!(Selection::Pile { index: 1 }.same_collection(Selection::Pile { index: 1 }));
         assert!(!Selection::Pile { index: 2 }.same_collection(Selection::Pile { index: 1 }));
+    }
+
+    #[test]
+    fn test_selected_collection() {
+        let mut a = GameState::init(Card::ordered_deck());
+        let b = Selection::Deck.selected_collection(&mut a);
     }
 }
