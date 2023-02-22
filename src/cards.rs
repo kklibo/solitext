@@ -80,8 +80,8 @@ impl Display for Suit {
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct Card {
-    suit: Suit,
-    rank: Rank,
+    pub suit: Suit,
+    pub rank: Rank,
 }
 
 impl Display for Card {

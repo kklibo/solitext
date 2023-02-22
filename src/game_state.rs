@@ -1,4 +1,5 @@
-use crate::cards::Card;
+use crate::cards::{Card, Rank, Suit};
+use strum::IntoEnumIterator;
 
 #[derive(Debug, Default, Copy, Clone, Eq, PartialEq)]
 pub enum CardState {
@@ -120,6 +121,25 @@ impl GameState {
             .expect("column should exist")
             .0
             .is_empty()
+    }
+
+    pub fn victory() -> Self {
+        let mut card_piles: [CardPile; Self::CARD_PILES_COUNT as usize] = Default::default();
+
+        for (index, suit) in Suit::iter().enumerate() {
+            for rank in Rank::iter() {
+                card_piles
+                    .get_mut(index)
+                    .expect("card pile should exist")
+                    .0
+                    .push(Card { suit, rank });
+            }
+        }
+
+        Self {
+            card_piles,
+            ..Default::default()
+        }
     }
 }
 
