@@ -376,6 +376,23 @@ impl Ui {
         Ok(())
     }
 
+    fn cards_action(&mut self, game_state: &mut GameState) {
+        if let (Some(from), to) = (self.selected, self.cursor) {
+            self.selected = None;
+
+            if game_logic::valid_move(from, to, game_state).is_ok() {
+                match Self::move_cards(from, to, game_state) {
+                    Ok(_) => self.debug_message = "move OK".to_string(),
+                    Err(_) => self.debug_message = "move attempt failed".to_string(),
+                }
+            } else {
+                self.debug_message = "invalid move".to_string();
+            }
+        } else {
+            self.selected = Some(self.cursor)
+        }
+    }
+
     fn debug_unchecked_cards_action(&mut self, game_state: &mut GameState) {
         if let Some(selected) = self.selected {
             self.selected = None;
@@ -404,6 +421,7 @@ impl Ui {
                 Key::Right => self.cursor.move_right(game_state),
                 Key::Up => self.cursor.select_up(game_state),
                 Key::Down => self.cursor.select_down(game_state),
+                Key::Char(' ') => self.cards_action(game_state),
                 Key::Char('c') => self.debug_unchecked_cards_action(game_state),
                 Key::Char('x') => self.selected = None,
                 Key::Char('z') => self.debug_check_valid(game_state),
