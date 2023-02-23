@@ -130,6 +130,19 @@ fn valid_move_column_to_pile(
     Err(())
 }
 
+fn valid_move_pile_to_column(
+    pile_index: u8,
+    column_index: u8,
+    game_state: &mut GameState,
+) -> Result<(), ()> {
+    let card = Selection::Pile { index: pile_index }
+        .selected_collection(game_state)
+        .peek()
+        .ok_or(())?;
+
+    valid_move_card_to_column(card, column_index, game_state)
+}
+
 pub fn valid_move(from: Selection, to: Selection, game_state: &mut GameState) -> Result<(), ()> {
     use Selection::{Column, Deck, Pile};
     match (from, to) {
@@ -152,6 +165,13 @@ pub fn valid_move(from: Selection, to: Selection, game_state: &mut GameState) ->
             },
             Pile { index: pile_index },
         ) => valid_move_column_to_pile(column_index, card_count, pile_index, game_state),
+        (
+            Pile { index: pile_index },
+            Column {
+                index: column_index,
+                ..
+            },
+        ) => valid_move_pile_to_column(pile_index, column_index, game_state),
         _ => Err(()),
     }
 }
