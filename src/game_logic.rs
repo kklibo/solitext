@@ -92,6 +92,44 @@ fn valid_move_column_to_column(
     valid_move_card_to_column(first_card, to_index, game_state)
 }
 
+fn valid_move_column_to_pile(
+    column_index: u8,
+    card_count: u8,
+    pile_index: u8,
+    game_state: &mut GameState,
+) -> Result<(), ()> {
+    use Selection::{Column, Pile};
+
+    if card_count != 1 {
+        return Err(());
+    }
+
+    let column_card = Column {
+        index: column_index,
+        card_count,
+    }
+    .selected_collection(game_state)
+    .peek()
+    .ok_or(())?;
+    if column_card.suit as u8 != pile_index {
+        return Err(());
+    }
+
+    let pile_card = Pile { index: pile_index }
+        .selected_collection(game_state)
+        .peek();
+
+    if let Some(pile_card) = pile_card {
+        if column_card.rank as u8 == pile_card.rank as u8 + 1 {
+            return Ok(());
+        }
+    } else if column_card.rank == Rank::Ace {
+        return Ok(());
+    }
+
+    Err(())
+}
+
 pub fn valid_move(from: Selection, to: Selection, game_state: &mut GameState) -> Result<(), ()> {
     use Selection::{Column, Deck, Pile};
     match (from, to) {
@@ -107,6 +145,13 @@ pub fn valid_move(from: Selection, to: Selection, game_state: &mut GameState) ->
                 index: to_index, ..
             },
         ) => valid_move_column_to_column(from_index, card_count, to_index, game_state),
+        (
+            Column {
+                index: column_index,
+                card_count,
+            },
+            Pile { index: pile_index },
+        ) => valid_move_column_to_pile(column_index, card_count, pile_index, game_state),
         _ => Err(()),
     }
 }
