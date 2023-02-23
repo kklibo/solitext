@@ -145,34 +145,29 @@ fn valid_move_pile_to_column(
 
 pub fn valid_move(from: Selection, to: Selection, game_state: &mut GameState) -> Result<(), ()> {
     use Selection::{Column, Deck, Pile};
-    match (from, to) {
-        (Deck, Deck) => Err(()),
-        (Deck, Column { index, .. }) => valid_move_deck_to_column(index, game_state),
-        (Deck, Pile { index }) => valid_move_deck_to_pile(index, game_state),
-        (
-            Column {
-                index: from_index,
-                card_count,
-            },
-            Column {
-                index: to_index, ..
-            },
-        ) => valid_move_column_to_column(from_index, card_count, to_index, game_state),
-        (
-            Column {
-                index: column_index,
-                card_count,
-            },
-            Pile { index: pile_index },
-        ) => valid_move_column_to_pile(column_index, card_count, pile_index, game_state),
-        (
-            Pile { index: pile_index },
+    match from {
+        Deck => match to {
+            Deck => Err(()),
+            Pile { index } => valid_move_deck_to_pile(index, game_state),
+            Column { index, .. } => valid_move_deck_to_column(index, game_state),
+        },
+        Pile { index } => match to {
+            Deck => Err(()),
+            Pile { .. } => Err(()),
             Column {
                 index: column_index,
                 ..
-            },
-        ) => valid_move_pile_to_column(pile_index, column_index, game_state),
-        _ => Err(()),
+            } => valid_move_pile_to_column(index, column_index, game_state),
+        },
+        Column { index, card_count } => match to {
+            Deck => Err(()),
+            Pile { index: pile_index } => {
+                valid_move_column_to_pile(index, card_count, pile_index, game_state)
+            }
+            Column {
+                index: to_index, ..
+            } => valid_move_column_to_column(index, card_count, to_index, game_state),
+        },
     }
 }
 
