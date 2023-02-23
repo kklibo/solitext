@@ -91,6 +91,10 @@ impl Display for Card {
 }
 
 impl Card {
+    pub fn new(suit: Suit, rank: Rank) -> Self {
+        Self { suit, rank }
+    }
+
     pub fn ordered_deck() -> Vec<Self> {
         let mut cards = vec![];
         for suit in Suit::iter() {

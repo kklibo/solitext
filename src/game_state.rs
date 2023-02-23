@@ -25,6 +25,7 @@ pub trait CardCollection {
     fn take(&mut self, cards_count: usize) -> Result<Vec<Card>, ()>;
     fn receive(&mut self, cards: Vec<Card>) -> Result<(), ()>;
     fn peek(&self) -> Option<Card>;
+    fn peek_n(&self, count: usize) -> Option<Vec<Card>>;
 }
 
 impl CardCollection for CardColumn {
@@ -46,6 +47,11 @@ impl CardCollection for CardColumn {
     }
     fn peek(&self) -> Option<Card> {
         self.0.last().map(|&(card, _)| card)
+    }
+    fn peek_n(&self, count: usize) -> Option<Vec<Card>> {
+        let start_index = self.0.len().checked_sub(count)?;
+        let cards = self.0.get(start_index..)?;
+        Some(cards.iter().map(|(card, _)| *card).collect())
     }
 }
 
@@ -73,6 +79,10 @@ impl CardCollection for CardPile {
     fn peek(&self) -> Option<Card> {
         self.0.last().copied()
     }
+    fn peek_n(&self, count: usize) -> Option<Vec<Card>> {
+        let start_index = self.0.len().checked_sub(count)?;
+        self.0.get(start_index..).map(Into::into)
+    }
 }
 
 impl CardCollection for Vec<Card> {
@@ -98,6 +108,10 @@ impl CardCollection for Vec<Card> {
     }
     fn peek(&self) -> Option<Card> {
         self.last().copied()
+    }
+    fn peek_n(&self, count: usize) -> Option<Vec<Card>> {
+        let start_index = self.len().checked_sub(count)?;
+        self.get(start_index..).map(Into::into)
     }
 }
 
@@ -184,5 +198,22 @@ mod tests {
 
         dbg!(&a.columns[2]);
         dbg!(&a.columns[3]);
+    }
+
+    #[test]
+    fn test_card_collection_peek_n() {
+        use crate::cards::{Rank::*, Suit::*};
+        let a = GameState::init(Card::ordered_deck());
+
+        let peek3 = a.columns[6].peek_n(3);
+        let expected = vec![
+            Card::new(Diamonds, Ace),
+            Card::new(Spades, King),
+            Card::new(Spades, Queen),
+        ];
+        assert_eq!(peek3, Some(expected));
+
+        let peek_too_many = a.columns[0].peek_n(2);
+        assert_eq!(peek_too_many, None);
     }
 }
