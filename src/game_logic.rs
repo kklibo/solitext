@@ -74,12 +74,39 @@ fn valid_move_deck_to_column(column_index: u8, game_state: &mut GameState) -> Re
     valid_move_card_to_column(deck_card, column_index, game_state)
 }
 
+fn valid_move_column_to_column(
+    from_index: u8,
+    card_count: u8,
+    to_index: u8,
+    game_state: &mut GameState,
+) -> Result<(), ()> {
+    let cards = Selection::Column {
+        index: from_index,
+        card_count,
+    }
+    .selected_collection(game_state)
+    .peek_n(card_count as usize)
+    .ok_or(())?;
+
+    let first_card = cards.first().copied().ok_or(())?;
+    valid_move_card_to_column(first_card, to_index, game_state)
+}
+
 pub fn valid_move(from: Selection, to: Selection, game_state: &mut GameState) -> Result<(), ()> {
     use Selection::{Column, Deck, Pile};
     match (from, to) {
         (Deck, Deck) => Err(()),
         (Deck, Column { index, .. }) => valid_move_deck_to_column(index, game_state),
         (Deck, Pile { index }) => valid_move_deck_to_pile(index, game_state),
+        (
+            Column {
+                index: from_index,
+                card_count,
+            },
+            Column {
+                index: to_index, ..
+            },
+        ) => valid_move_column_to_column(from_index, card_count, to_index, game_state),
         _ => Err(()),
     }
 }
