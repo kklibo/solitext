@@ -363,19 +363,23 @@ impl Ui {
         .unwrap();
     }
 
+    fn move_cards(from: Selection, to: Selection, game_state: &mut GameState) -> Result<(), ()> {
+        if from.same_collection(to) {
+            return Err(());
+        }
+
+        let cards = from
+            .selected_collection(game_state)
+            .take(from.card_count())?;
+
+        to.selected_collection(game_state).receive(cards)?;
+        Ok(())
+    }
+
     fn cards_action(&mut self, game_state: &mut GameState) {
         if let Some(selected) = self.selected {
-            if !self.cursor.same_collection(selected) {
-                let src = selected.selected_collection(game_state);
-                let cards = src
-                    .take(selected.card_count())
-                    .expect("card take should work");
-
-                let dest = self.cursor.selected_collection(game_state);
-                dest.receive(cards).expect("card receive should work");
-
-                self.selected = None;
-            }
+            self.selected = None;
+            let _ = Self::move_cards(selected, self.cursor, game_state);
         } else {
             self.selected = Some(self.cursor)
         }
