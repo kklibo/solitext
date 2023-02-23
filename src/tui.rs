@@ -144,15 +144,24 @@ impl Selection {
 }
 
 pub struct Ui {
+    ui_state: UiState,
     stdout: RawTerminal<Stdout>,
     cursor: Selection,
     selected: Option<Selection>,
     debug_message: String,
 }
 
+enum UiState {
+    Intro,
+    Game,
+    Victory,
+    Quit,
+}
+
 impl Ui {
     pub fn new() -> Self {
         Self {
+            ui_state: UiState::Game,
             stdout: stdout().into_raw_mode().unwrap(),
             cursor: Selection::Deck,
             selected: None,
@@ -410,11 +419,7 @@ impl Ui {
         }
     }
 
-    pub fn run(&mut self, game_state: &mut GameState) {
-        self.set_up_terminal();
-
-        *game_state = GameState::almost_victory();
-
+    fn run_game(&mut self, game_state: &mut GameState) {
         self.display_game_state(game_state);
 
         let stdin = stdin();
@@ -428,8 +433,10 @@ impl Ui {
                 Key::Char('c') => self.debug_unchecked_cards_action(game_state),
                 Key::Char('x') => self.selected = None,
                 Key::Char('z') => self.debug_check_valid(game_state),
-                Key::Esc => break,
-                Key::Ctrl('c') => break,
+                Key::Esc | Key::Ctrl('c') => {
+                    self.ui_state = UiState::Quit;
+                    break;
+                }
                 _ => {}
             }
 
@@ -439,6 +446,19 @@ impl Ui {
 
             self.display_game_state(game_state);
             self.stdout.flush().unwrap();
+        }
+    }
+
+    pub fn run(&mut self, game_state: &mut GameState) {
+        self.set_up_terminal();
+        *game_state = GameState::almost_victory();
+
+        loop {
+            match self.ui_state {
+                UiState::Game => self.run_game(game_state),
+                UiState::Quit => break,
+                _ => todo!(),
+            }
         }
 
         self.restore_terminal();
