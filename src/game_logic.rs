@@ -40,9 +40,12 @@ fn valid_move_deck_to_pile(pile_index: u8, game_state: &mut GameState) -> Result
     }
 }
 
-fn valid_move_deck_to_column(column_index: u8, game_state: &mut GameState) -> Result<(), ()> {
-    use Selection::{Column, Deck};
-    let deck_card = Deck.selected_collection(game_state).peek().ok_or(())?;
+fn valid_move_card_to_column(
+    card: Card,
+    column_index: u8,
+    game_state: &mut GameState,
+) -> Result<(), ()> {
+    use Selection::Column;
     let column_card = Column {
         index: column_index,
         card_count: 0,
@@ -51,18 +54,24 @@ fn valid_move_deck_to_column(column_index: u8, game_state: &mut GameState) -> Re
     .peek();
 
     if let Some(column_card) = column_card {
-        if deck_card.rank as u8 + 1 == column_card.rank as u8
-            && deck_card.suit.is_red() != column_card.suit.is_red()
+        if card.rank as u8 + 1 == column_card.rank as u8
+            && card.suit.is_red() != column_card.suit.is_red()
         {
             Ok(())
         } else {
             Err(())
         }
-    } else if deck_card.rank == Rank::King {
+    } else if card.rank == Rank::King {
         Ok(())
     } else {
         Err(())
     }
+}
+
+fn valid_move_deck_to_column(column_index: u8, game_state: &mut GameState) -> Result<(), ()> {
+    use Selection::Deck;
+    let deck_card = Deck.selected_collection(game_state).peek().ok_or(())?;
+    valid_move_card_to_column(deck_card, column_index, game_state)
 }
 
 pub fn valid_move(from: Selection, to: Selection, game_state: &mut GameState) -> Result<(), ()> {
