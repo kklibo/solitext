@@ -376,7 +376,7 @@ impl Ui {
         Ok(())
     }
 
-    fn cards_action(&mut self, game_state: &mut GameState) {
+    fn debug_unchecked_cards_action(&mut self, game_state: &mut GameState) {
         if let Some(selected) = self.selected {
             self.selected = None;
             let _ = Self::move_cards(selected, self.cursor, game_state);
@@ -404,7 +404,7 @@ impl Ui {
                 Key::Right => self.cursor.move_right(game_state),
                 Key::Up => self.cursor.select_up(game_state),
                 Key::Down => self.cursor.select_down(game_state),
-                Key::Char(' ') => self.cards_action(game_state),
+                Key::Char('c') => self.debug_unchecked_cards_action(game_state),
                 Key::Char('x') => self.selected = None,
                 Key::Char('z') => self.debug_check_valid(game_state),
                 Key::Esc => break,
