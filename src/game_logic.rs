@@ -178,6 +178,7 @@ mod test {
     #[test]
     fn test_victory() {
         assert!(victory(&GameState::victory()));
+        assert!(!victory(&GameState::almost_victory()));
         assert!(!victory(&GameState::init(Card::ordered_deck())));
     }
 }

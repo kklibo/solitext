@@ -165,6 +165,14 @@ impl GameState {
             ..Default::default()
         }
     }
+
+    pub fn almost_victory() -> Self {
+        let mut x = Self::victory();
+        x.columns[0]
+            .0
+            .push((x.card_piles[0].0.pop().unwrap(), CardState::FaceUp));
+        x
+    }
 }
 
 #[cfg(test)]

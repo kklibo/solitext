@@ -412,6 +412,9 @@ impl Ui {
 
     pub fn run(&mut self, game_state: &mut GameState) {
         self.set_up_terminal();
+
+        *game_state = GameState::almost_victory();
+
         self.display_game_state(game_state);
 
         let stdin = stdin();
@@ -429,6 +432,11 @@ impl Ui {
                 Key::Ctrl('c') => break,
                 _ => {}
             }
+
+            if game_logic::victory(game_state) {
+                self.debug_message = "Victory".to_string();
+            }
+
             self.display_game_state(game_state);
             self.stdout.flush().unwrap();
         }
