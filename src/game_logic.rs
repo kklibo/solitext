@@ -33,12 +33,35 @@ fn valid_move_deck_to_pile(pile_index: u8, game_state: &mut GameState) -> Result
         } else {
             Err(())
         }
+    } else if deck_card.rank == Rank::Ace {
+        Ok(())
     } else {
-        if deck_card.rank == Rank::Ace {
+        Err(())
+    }
+}
+
+fn valid_move_deck_to_column(column_index: u8, game_state: &mut GameState) -> Result<(), ()> {
+    use Selection::{Column, Deck};
+    let deck_card = Deck.selected_collection(game_state).peek().ok_or(())?;
+    let column_card = Column {
+        index: column_index,
+        card_count: 0,
+    }
+    .selected_collection(game_state)
+    .peek();
+
+    if let Some(column_card) = column_card {
+        if deck_card.rank as u8 + 1 == column_card.rank as u8
+            && deck_card.suit.is_red() != column_card.suit.is_red()
+        {
             Ok(())
         } else {
             Err(())
         }
+    } else if deck_card.rank == Rank::King {
+        Ok(())
+    } else {
+        Err(())
     }
 }
 
@@ -46,6 +69,7 @@ pub fn valid_move(from: Selection, to: Selection, game_state: &mut GameState) ->
     use Selection::{Column, Deck, Pile};
     match (from, to) {
         (Deck, Deck) => Err(()),
+        (Deck, Column { index, .. }) => valid_move_deck_to_column(index, game_state),
         (Deck, Pile { index }) => valid_move_deck_to_pile(index, game_state),
         _ => Err(()),
     }
