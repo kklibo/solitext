@@ -24,6 +24,7 @@ pub struct GameState {
 pub trait CardCollection {
     fn take(&mut self, cards_count: usize) -> Result<Vec<Card>, ()>;
     fn receive(&mut self, cards: Vec<Card>) -> Result<(), ()>;
+    fn peek(&self) -> Option<Card>;
 }
 
 impl CardCollection for CardColumn {
@@ -42,6 +43,9 @@ impl CardCollection for CardColumn {
             self.0.push((card, CardState::FaceUp));
         }
         Ok(())
+    }
+    fn peek(&self) -> Option<Card> {
+        self.0.last().map(|&(card, _)| card)
     }
 }
 
@@ -66,6 +70,9 @@ impl CardCollection for CardPile {
         self.0.push(cards[0]);
         Ok(())
     }
+    fn peek(&self) -> Option<Card> {
+        self.0.last().copied()
+    }
 }
 
 impl CardCollection for Vec<Card> {
@@ -88,6 +95,9 @@ impl CardCollection for Vec<Card> {
         }
         self.push(cards[0]);
         Ok(())
+    }
+    fn peek(&self) -> Option<Card> {
+        self.last().copied()
     }
 }
 

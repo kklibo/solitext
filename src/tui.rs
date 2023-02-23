@@ -1,3 +1,4 @@
+use crate::game_logic;
 use crate::game_state::CardCollection;
 use crate::game_state::GameState;
 use std::io::{stdin, stdout, Stdout, Write};
@@ -7,7 +8,7 @@ use termion::raw::{IntoRawMode, RawTerminal};
 use termion::{clear, color, cursor};
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
-enum Selection {
+pub enum Selection {
     Deck,
     Column { index: u8, card_count: u8 },
     Pile { index: u8 },
@@ -146,6 +147,7 @@ pub struct Ui {
     stdout: RawTerminal<Stdout>,
     cursor: Selection,
     selected: Option<Selection>,
+    debug_message: String,
 }
 
 impl Ui {
@@ -154,6 +156,7 @@ impl Ui {
             stdout: stdout().into_raw_mode().unwrap(),
             cursor: Selection::Deck,
             selected: None,
+            debug_message: "".to_string(),
         }
     }
 
@@ -337,9 +340,10 @@ impl Ui {
         .unwrap();
         writeln!(
             self.stdout,
-            "{}{}Space: ",
+            "{}{}debug: {}",
             cursor::Goto(2, Self::CURSOR_ROW + 2),
             color::Fg(color::LightBlack),
+            self.debug_message
         )
         .unwrap();
     }
@@ -377,6 +381,14 @@ impl Ui {
         }
     }
 
+    fn debug_check_valid(&mut self, game_state: &mut GameState) {
+        if let (Some(from), to) = (self.selected, self.cursor) {
+            self.debug_message = format!("{:?}", game_logic::valid_move(from, to, game_state));
+        } else {
+            self.debug_message = "".to_string();
+        }
+    }
+
     pub fn run(&mut self, game_state: &mut GameState) {
         self.set_up_terminal();
         self.display_game_state(game_state);
@@ -390,6 +402,7 @@ impl Ui {
                 Key::Down => self.cursor.select_down(game_state),
                 Key::Char(' ') => self.cards_action(game_state),
                 Key::Char('x') => self.selected = None,
+                Key::Char('z') => self.debug_check_valid(game_state),
                 Key::Esc => break,
                 Key::Ctrl('c') => break,
                 _ => {}
