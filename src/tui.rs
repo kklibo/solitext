@@ -2,6 +2,7 @@ use crate::game_logic;
 use crate::game_state::CardCollection;
 use crate::game_state::GameState;
 use std::io::{stdin, stdout, Stdout, Write};
+use std::{thread, time};
 use termion::event::Key;
 use termion::input::TermRead;
 use termion::raw::{IntoRawMode, RawTerminal};
@@ -357,6 +358,19 @@ impl Ui {
         .unwrap();
     }
 
+    fn draw_box(&mut self, col1: u16, row1: u16, col2: u16, row2: u16) {
+        use std::cmp::{max, min};
+        for col in min(col1, col2)..=max(col1, col2) {
+            for row in min(row1, row2)..=max(row1, row2) {
+                writeln!(self.stdout, "{}█", cursor::Goto(col, row)).unwrap();
+            }
+        }
+    }
+
+    fn draw_text(&mut self, col: u16, row: u16, text: &str) {
+        writeln!(self.stdout, "{}{}", cursor::Goto(col, row), text).unwrap();
+    }
+
     fn set_up_terminal(&mut self) {
         writeln!(self.stdout, "{}", cursor::Hide).unwrap();
     }
@@ -442,6 +456,8 @@ impl Ui {
 
             if game_logic::victory(game_state) {
                 self.debug_message = "Victory".to_string();
+                self.ui_state = UiState::Victory;
+                break;
             }
 
             self.display_game_state(game_state);
@@ -449,13 +465,78 @@ impl Ui {
         }
     }
 
+    fn display_victory_message(&mut self, game_state: &mut GameState) {
+        const CENTER: (u16, u16) = (26, 5);
+        const WIDTH_VAL: u16 = 3;
+        fn draw_box(s: &mut Ui, size: u16) {
+            s.draw_box(
+                CENTER.0 - WIDTH_VAL - size,
+                CENTER.1 - size,
+                CENTER.0 + WIDTH_VAL + size,
+                CENTER.1 + size,
+            );
+        }
+        fn pause() {
+            thread::sleep(time::Duration::from_millis(300));
+        }
+
+        self.set_colors(color::Blue, color::Reset);
+        draw_box(self, 3);
+        pause();
+        self.set_colors(color::Green, color::Reset);
+        draw_box(self, 2);
+        pause();
+        self.set_colors(color::Red, color::Reset);
+        draw_box(self, 1);
+        pause();
+
+        self.set_colors(color::LightYellow, color::LightBlue);
+        self.draw_text(CENTER.0 - 3, CENTER.1, "YOU WIN");
+        pause();
+        pause();
+        self.set_colors(color::Reset, color::Reset);
+        self.draw_text(CENTER.0 - 8, CENTER.1 + 4, "Play again? (y/n)");
+    }
+
+    fn display_victory(&mut self, game_state: &mut GameState) {
+        writeln!(self.stdout, "{}", clear::All,).unwrap();
+        //just display cards
+        self.display_deck(game_state);
+        self.display_columns(game_state);
+        self.display_piles(game_state);
+
+        self.display_victory_message(game_state);
+
+        self.set_colors(color::Reset, color::Reset);
+        self.stdout.flush().unwrap();
+    }
+
+    fn run_victory(&mut self, game_state: &mut GameState) {
+        self.display_victory(game_state);
+
+        let stdin = stdin();
+        for c in stdin.keys() {
+            match c.unwrap() {
+                Key::Esc | Key::Ctrl('c') => {
+                    self.ui_state = UiState::Quit;
+                    break;
+                }
+                _ => {}
+            }
+
+            self.stdout.flush().unwrap();
+        }
+    }
+
     pub fn run(&mut self, game_state: &mut GameState) {
         self.set_up_terminal();
         *game_state = GameState::almost_victory();
+        self.ui_state = UiState::Victory;
 
         loop {
             match self.ui_state {
                 UiState::Game => self.run_game(game_state),
+                UiState::Victory => self.run_victory(game_state),
                 UiState::Quit => break,
                 _ => todo!(),
             }
