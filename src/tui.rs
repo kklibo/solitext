@@ -441,6 +441,10 @@ impl Ui {
         }
     }
 
+    fn enter_key_action(&mut self, game_state: &mut GameState) {
+        game_state.deck_hit();
+    }
+
     fn debug_unchecked_cards_action(&mut self, game_state: &mut GameState) {
         if let Some(selected) = self.selected {
             self.selected = None;
@@ -462,8 +466,10 @@ impl Ui {
     /// Returns: true IFF UiState has changed
     fn turn_actions(&mut self, game_state: &mut GameState) -> bool {
         // Ensure a face-up card at the end of each column
-        // (Any other automatic state changes can go here too)
         game_logic::face_up_on_columns(game_state);
+        // If the deck is empty, reload from the discard pile (if any)
+        game_state.reload_deck();
+        // (Any other automatic state changes can go here too)
 
         if game_logic::victory(game_state) {
             self.debug_message = "Victory".to_string();
@@ -488,6 +494,7 @@ impl Ui {
                 Key::Up => self.cursor.select_up(game_state, self.debug_mode),
                 Key::Down => self.cursor.select_down(game_state),
                 Key::Char(' ') => self.cards_action(game_state),
+                Key::Char('\n') => self.enter_key_action(game_state),
                 Key::Char('c') if self.debug_mode => self.debug_unchecked_cards_action(game_state),
                 Key::Char('x') => self.selected = None,
                 Key::Char('z') if self.debug_mode => self.debug_check_valid(game_state),

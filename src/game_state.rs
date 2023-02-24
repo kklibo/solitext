@@ -1,4 +1,5 @@
 use crate::cards::{Card, Rank, Suit};
+use std::collections::VecDeque;
 use strum::IntoEnumIterator;
 
 #[derive(Debug, Default, Copy, Clone, Eq, PartialEq)]
@@ -17,6 +18,7 @@ pub struct CardPile(pub Vec<Card>);
 #[derive(Debug, Default, Clone, Eq, PartialEq)]
 pub struct GameState {
     pub deck: Vec<Card>,
+    pub deck_discard: VecDeque<Card>,
     pub columns: [CardColumn; Self::COLUMN_COUNT as usize],
     pub card_piles: [CardPile; Self::CARD_PILES_COUNT as usize],
 }
@@ -144,6 +146,7 @@ impl GameState {
 
         Self {
             deck,
+            deck_discard: Default::default(),
             columns,
             card_piles,
         }
@@ -155,6 +158,19 @@ impl GameState {
             .expect("column should exist")
             .0
             .is_empty()
+    }
+
+    pub fn deck_hit(&mut self) {
+        if let Some(card) = self.deck.pop() {
+            self.deck_discard.push_front(card);
+        }
+    }
+
+    pub fn reload_deck(&mut self) {
+        if self.deck.is_empty() && !self.deck_discard.is_empty() {
+            self.deck = self.deck_discard.clone().into();
+            self.deck_discard.clear();
+        }
     }
 
     pub fn victory() -> Self {
