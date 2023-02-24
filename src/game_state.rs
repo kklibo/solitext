@@ -115,6 +115,16 @@ impl CardCollection for Vec<Card> {
     }
 }
 
+impl CardColumn {
+    pub fn face_up_cards(&self) -> usize {
+        self.0
+            .iter()
+            .rev()
+            .take_while(|(_, card_state)| *card_state == CardState::FaceUp)
+            .count()
+    }
+}
+
 impl GameState {
     pub const COLUMN_COUNT: u8 = 7;
     pub const CARD_PILES_COUNT: u8 = 4;

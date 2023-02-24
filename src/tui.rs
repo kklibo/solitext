@@ -93,18 +93,27 @@ impl Selection {
     }
 
     /// for the Up key
-    pub fn select_up(&mut self, game_state: &GameState) {
+    pub fn select_up(&mut self, game_state: &GameState, debug_mode: bool) {
         *self = match *self {
             x @ Self::Deck => x,
-            Self::Column { index, card_count }
-                if (card_count as usize) < game_state.columns[index as usize].0.len() =>
-            {
+            Self::Column { index, card_count } => {
+                let mut new_count = card_count;
+                if debug_mode {
+                    // In debug mode, allow selection of face-down cards
+                    if (card_count as usize) < game_state.columns[index as usize].0.len() {
+                        new_count += 1;
+                    }
+                } else {
+                    // Only allow selection of face-up cards
+                    if (card_count as usize) < game_state.columns[index as usize].face_up_cards() {
+                        new_count += 1;
+                    }
+                };
                 Self::Column {
                     index,
-                    card_count: card_count + 1,
+                    card_count: new_count,
                 }
             }
-            x @ Self::Column { .. } => x,
             Self::Pile { index } if index > 0 => Self::Pile { index: index - 1 },
             x @ Self::Pile { .. } => x,
         }
@@ -456,7 +465,7 @@ impl Ui {
             match c.unwrap() {
                 Key::Left => self.cursor.move_left(game_state),
                 Key::Right => self.cursor.move_right(game_state),
-                Key::Up => self.cursor.select_up(game_state),
+                Key::Up => self.cursor.select_up(game_state, self.debug_mode),
                 Key::Down => self.cursor.select_down(game_state),
                 Key::Char(' ') => self.cards_action(game_state),
                 Key::Char('c') if self.debug_mode => self.debug_unchecked_cards_action(game_state),
