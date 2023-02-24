@@ -151,6 +151,7 @@ pub struct Ui {
     cursor: Selection,
     selected: Option<Selection>,
     debug_message: String,
+    debug_mode: bool,
 }
 
 enum UiState {
@@ -169,6 +170,7 @@ impl Ui {
             cursor: Selection::Deck,
             selected: None,
             debug_message: "".to_string(),
+            debug_mode: true,
         }
     }
 
@@ -287,8 +289,17 @@ impl Ui {
                 card.to_string()
             }
             CardState::FaceDown => {
-                writeln!(self.stdout, "{}{}", Fg(Blue), Bg(LightBlack)).unwrap();
-                "st".to_string()
+                if self.debug_mode {
+                    if card.suit.is_red() {
+                        writeln!(self.stdout, "{}{}", Fg(LightRed), Bg(Black)).unwrap();
+                    } else {
+                        writeln!(self.stdout, "{}{}", Fg(LightBlack), Bg(Black)).unwrap();
+                    }
+                    card.to_string()
+                } else {
+                    writeln!(self.stdout, "{}{}", Fg(Blue), Bg(LightBlack)).unwrap();
+                    "st".to_string()
+                }
             }
         };
 
@@ -345,21 +356,21 @@ impl Ui {
     }
 
     fn display_info(&mut self, game_state: &GameState) {
-        writeln!(
-            self.stdout,
-            "{}{}Solitext",
-            cursor::Goto(1, 1),
-            color::Fg(color::LightYellow),
-        )
-        .unwrap();
-        writeln!(
-            self.stdout,
-            "{}{}debug: {}",
-            cursor::Goto(2, Self::CURSOR_ROW + 2),
-            color::Fg(color::LightBlack),
-            self.debug_message
-        )
-        .unwrap();
+        use color::*;
+        use cursor::*;
+
+        writeln!(self.stdout, "{}{}Solitext", Goto(1, 1), Fg(LightYellow),).unwrap();
+        if self.debug_mode {
+            let (col, row) = (2, Self::CURSOR_ROW + 2);
+            writeln!(
+                self.stdout,
+                "{}{}debug: {}",
+                Goto(col, row),
+                Fg(LightBlack),
+                self.debug_message
+            )
+            .unwrap();
+        }
     }
 
     fn draw_box(&mut self, col1: u16, row1: u16, col2: u16, row2: u16) {
@@ -448,9 +459,10 @@ impl Ui {
                 Key::Up => self.cursor.select_up(game_state),
                 Key::Down => self.cursor.select_down(game_state),
                 Key::Char(' ') => self.cards_action(game_state),
-                Key::Char('c') => self.debug_unchecked_cards_action(game_state),
+                Key::Char('c') if self.debug_mode => self.debug_unchecked_cards_action(game_state),
                 Key::Char('x') => self.selected = None,
-                Key::Char('z') => self.debug_check_valid(game_state),
+                Key::Char('z') if self.debug_mode => self.debug_check_valid(game_state),
+                Key::Char('d') => self.debug_mode = !self.debug_mode,
                 Key::Esc | Key::Ctrl('c') => {
                     self.ui_state = UiState::Quit;
                     break;
