@@ -493,6 +493,8 @@ impl Ui {
                 Key::Right => self.cursor.move_right(game_state),
                 Key::Up => self.cursor.select_up(game_state, self.debug_mode),
                 Key::Down => self.cursor.select_down(game_state),
+                Key::Home => self.cursor = Selection::Deck,
+                Key::End => self.cursor = Selection::Pile {index: 0},
                 Key::Char(' ') => self.cards_action(game_state),
                 Key::Char('\n') => self.enter_key_action(game_state),
                 Key::Char('c') if self.debug_mode => self.debug_unchecked_cards_action(game_state),
