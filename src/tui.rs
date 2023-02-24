@@ -442,7 +442,21 @@ impl Ui {
     }
 
     fn enter_key_action(&mut self, game_state: &mut GameState) {
-        game_state.deck_hit();
+        if matches!(self.cursor, Selection::Deck) {
+            game_state.deck_hit();
+        } else if let Selection::Column { index, .. } = self.cursor {
+            let from = Selection::Column {
+                index,
+                card_count: 1,
+            };
+            //todo: refactor this
+            for i in 0..4 {
+                let to = Selection::Pile { index: i };
+                if game_logic::valid_move(from, to, game_state).is_ok() {
+                    let _ = Self::move_cards(from, to, game_state);
+                }
+            }
+        }
     }
 
     fn debug_unchecked_cards_action(&mut self, game_state: &mut GameState) {
@@ -494,7 +508,7 @@ impl Ui {
                 Key::Up => self.cursor.select_up(game_state, self.debug_mode),
                 Key::Down => self.cursor.select_down(game_state),
                 Key::Home => self.cursor = Selection::Deck,
-                Key::End => self.cursor = Selection::Pile {index: 0},
+                Key::End => self.cursor = Selection::Pile { index: 0 },
                 Key::Char(' ') => self.cards_action(game_state),
                 Key::Char('\n') => self.enter_key_action(game_state),
                 Key::Char('c') if self.debug_mode => self.debug_unchecked_cards_action(game_state),
