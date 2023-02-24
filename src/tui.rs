@@ -1,7 +1,7 @@
 use crate::cards::Card;
 use crate::game_logic;
-use crate::game_state::CardCollection;
 use crate::game_state::GameState;
+use crate::game_state::{CardCollection, CardState};
 use std::io::{stdin, stdout, Stdout, Write};
 use std::{thread, time};
 use termion::event::Key;
@@ -268,6 +268,33 @@ impl Ui {
         writeln!(self.stdout, "{}{ch}", cursor::Goto(col, row),).unwrap();
     }
 
+    fn display_card(
+        &mut self,
+        card: Card,
+        card_state: CardState,
+        col: u16,
+        row: u16,
+        game_state: &GameState,
+    ) {
+        use termion::color::*;
+        let text = match card_state {
+            CardState::FaceUp => {
+                if card.suit.is_red() {
+                    writeln!(self.stdout, "{}{}", Fg(Red), Bg(White)).unwrap();
+                } else {
+                    writeln!(self.stdout, "{}{}", Fg(Black), Bg(White)).unwrap();
+                }
+                card.to_string()
+            }
+            CardState::FaceDown => {
+                writeln!(self.stdout, "{}{}", Fg(Blue), Bg(LightBlack)).unwrap();
+                "st".to_string()
+            }
+        };
+
+        writeln!(self.stdout, "{}{}", cursor::Goto(col, row), text).unwrap();
+    }
+
     const COLUMNS_INIT_COL: u16 = 8;
     const COLUMNS_INIT_ROW: u16 = 2;
     const COLUMNS_COL_STEP: u16 = 5;
@@ -278,16 +305,7 @@ impl Ui {
         for column in &game_state.columns {
             let mut row = init_row;
             for (card, card_state) in &column.0 {
-                writeln!(
-                    self.stdout,
-                    "{}{}{}{}",
-                    cursor::Goto(col, row),
-                    cursor::Hide,
-                    color::Fg(color::Green),
-                    card
-                )
-                .unwrap();
-
+                self.display_card(*card, *card_state, col, row, game_state);
                 row += Self::COLUMNS_ROW_STEP;
             }
             col += Self::COLUMNS_COL_STEP;
@@ -571,6 +589,7 @@ impl Ui {
     pub fn run(&mut self, game_state: &mut GameState) {
         self.set_up_terminal();
 
+        self.ui_state = UiState::NewGame;
         loop {
             match self.ui_state {
                 UiState::Intro => self.run_intro(game_state),
