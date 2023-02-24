@@ -316,24 +316,16 @@ impl Ui {
     const PILES_INIT_ROW: u16 = 2;
     const PILES_ROW_STEP: u16 = 2;
     fn display_piles(&mut self, game_state: &GameState) {
+        use color::*;
         let (init_col, init_row) = (Self::PILES_INIT_COL, Self::PILES_INIT_ROW);
         let mut row = init_row;
         for pile in &game_state.card_piles {
-            let top = if let Some(card) = pile.0.last() {
-                card.to_string()
+            if let Some(card) = pile.0.last() {
+                self.display_card(*card, CardState::FaceUp, init_col, row, game_state);
             } else {
-                " _".to_string()
+                writeln!(self.stdout, "{}{}", Fg(Blue), Bg(LightBlack)).unwrap();
+                self.draw_text(init_col, row, " _");
             };
-
-            writeln!(
-                self.stdout,
-                "{}{}{}{}",
-                cursor::Goto(init_col, row),
-                cursor::Hide,
-                color::Fg(color::Green),
-                top
-            )
-            .unwrap();
 
             row += Self::PILES_ROW_STEP;
         }
@@ -342,22 +334,14 @@ impl Ui {
     const DECK_INIT_COL: u16 = 2;
     const DECK_INIT_ROW: u16 = 2;
     fn display_deck(&mut self, game_state: &GameState) {
+        use color::*;
         let (init_col, init_row) = (Self::DECK_INIT_COL, Self::DECK_INIT_ROW);
-
-        let top = if let Some(card) = game_state.deck.last() {
-            card.to_string()
+        if let Some(card) = game_state.deck.last() {
+            self.display_card(*card, CardState::FaceUp, init_col, init_row, game_state);
         } else {
-            "_".to_string()
+            writeln!(self.stdout, "{}{}", Fg(Green), Bg(LightBlack)).unwrap();
+            self.draw_text(init_col, init_row, " O ");
         };
-
-        writeln!(
-            self.stdout,
-            "{}{}{}",
-            cursor::Goto(init_col, init_row),
-            color::Fg(color::Green),
-            top
-        )
-        .unwrap();
     }
 
     fn display_info(&mut self, game_state: &GameState) {
@@ -589,7 +573,8 @@ impl Ui {
     pub fn run(&mut self, game_state: &mut GameState) {
         self.set_up_terminal();
 
-        self.ui_state = UiState::NewGame;
+        self.ui_state = UiState::Game;
+        *game_state = GameState::almost_victory();
         loop {
             match self.ui_state {
                 UiState::Intro => self.run_intro(game_state),
