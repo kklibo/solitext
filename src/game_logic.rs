@@ -1,5 +1,5 @@
 use crate::cards::{Card, Rank};
-use crate::game_state::GameState;
+use crate::game_state::{CardState, GameState};
 use crate::tui::Selection;
 
 pub fn victory(game_state: &GameState) -> bool {
@@ -168,6 +168,15 @@ pub fn valid_move(from: Selection, to: Selection, game_state: &mut GameState) ->
                 index: to_index, ..
             } => valid_move_column_to_column(index, card_count, to_index, game_state),
         },
+    }
+}
+
+/// Ensure all card columns end with at least one face-up card
+pub fn face_up_on_columns(game_state: &mut GameState) {
+    for column in &mut game_state.columns {
+        if let Some((_, card_state)) = column.0.last_mut() {
+            *card_state = CardState::FaceUp;
+        }
     }
 }
 

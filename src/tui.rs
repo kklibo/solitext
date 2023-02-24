@@ -408,6 +408,7 @@ impl Ui {
             cursor::Show,
         )
         .unwrap();
+        self.stdout.flush().unwrap();
     }
 
     fn move_cards(from: Selection, to: Selection, game_state: &mut GameState) -> Result<(), ()> {
@@ -457,8 +458,27 @@ impl Ui {
         }
     }
 
-    fn run_game(&mut self, game_state: &mut GameState) {
+    /// Actions run on each user turn
+    /// Returns: true IFF UiState has changed
+    fn turn_actions(&mut self, game_state: &mut GameState) -> bool {
+        // Ensure a face-up card at the end of each column
+        // (Any other automatic state changes can go here too)
+        game_logic::face_up_on_columns(game_state);
+
+        if game_logic::victory(game_state) {
+            self.debug_message = "Victory".to_string();
+            self.ui_state = UiState::Victory;
+            return true;
+        }
+
         self.display_game_state(game_state);
+        false
+    }
+
+    fn run_game(&mut self, game_state: &mut GameState) {
+        if self.turn_actions(game_state) {
+            return;
+        }
 
         let stdin = stdin();
         for c in stdin.keys() {
@@ -478,15 +498,9 @@ impl Ui {
                 }
                 _ => {}
             }
-
-            if game_logic::victory(game_state) {
-                self.debug_message = "Victory".to_string();
-                self.ui_state = UiState::Victory;
-                break;
+            if self.turn_actions(game_state) {
+                return;
             }
-
-            self.display_game_state(game_state);
-            self.stdout.flush().unwrap();
         }
     }
 
@@ -594,8 +608,11 @@ impl Ui {
     pub fn run(&mut self, game_state: &mut GameState) {
         self.set_up_terminal();
 
+        //todo: remove
         self.ui_state = UiState::Game;
-        *game_state = GameState::almost_victory();
+        //*game_state = GameState::almost_victory();
+        //
+
         loop {
             match self.ui_state {
                 UiState::Intro => self.run_intro(game_state),
