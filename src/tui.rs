@@ -164,7 +164,7 @@ enum UiState {
 impl Ui {
     pub fn new() -> Self {
         Self {
-            ui_state: UiState::Game,
+            ui_state: UiState::Intro,
             stdout: stdout().into_raw_mode().unwrap(),
             cursor: Selection::Deck,
             selected: None,
@@ -501,7 +501,7 @@ impl Ui {
     }
 
     fn display_victory(&mut self, game_state: &mut GameState) {
-        writeln!(self.stdout, "{}", clear::All,).unwrap();
+        writeln!(self.stdout, "{}", clear::All).unwrap();
         //just display cards
         self.display_deck(game_state);
         self.display_columns(game_state);
@@ -511,6 +511,35 @@ impl Ui {
 
         self.set_colors(color::Reset, color::Reset);
         self.stdout.flush().unwrap();
+    }
+
+    fn run_intro(&mut self, game_state: &mut GameState) {
+        fn pause() {
+            thread::sleep(time::Duration::from_millis(500));
+        }
+
+        writeln!(self.stdout, "{}", clear::All).unwrap();
+        self.set_colors(color::Reset, color::Reset);
+
+        self.draw_text(1, 1, "haha you ran this program");
+        pause();
+        pause();
+        pause();
+        self.draw_text(10, 3, "NOW");
+        pause();
+        self.draw_text(30, 5, "YOU");
+        pause();
+        self.draw_text(12, 7, "MUST");
+        pause();
+        self.draw_text(32, 9, "PLAY");
+        pause();
+        pause();
+        pause();
+        pause();
+
+        self.set_colors(color::Reset, color::Reset);
+        self.stdout.flush().unwrap();
+        self.ui_state = UiState::NewGame;
     }
 
     fn run_victory(&mut self, game_state: &mut GameState) {
@@ -541,16 +570,14 @@ impl Ui {
 
     pub fn run(&mut self, game_state: &mut GameState) {
         self.set_up_terminal();
-        *game_state = GameState::almost_victory();
-        self.ui_state = UiState::Victory;
 
         loop {
             match self.ui_state {
+                UiState::Intro => self.run_intro(game_state),
                 UiState::NewGame => self.run_new_game(game_state),
                 UiState::Game => self.run_game(game_state),
                 UiState::Victory => self.run_victory(game_state),
                 UiState::Quit => break,
-                _ => todo!(),
             }
         }
 
