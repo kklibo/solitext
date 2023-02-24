@@ -1,3 +1,4 @@
+use crate::cards::Card;
 use crate::game_logic;
 use crate::game_state::CardCollection;
 use crate::game_state::GameState;
@@ -154,6 +155,7 @@ pub struct Ui {
 
 enum UiState {
     Intro,
+    NewGame,
     Game,
     Victory,
     Quit,
@@ -517,7 +519,11 @@ impl Ui {
         let stdin = stdin();
         for c in stdin.keys() {
             match c.unwrap() {
-                Key::Esc | Key::Ctrl('c') => {
+                Key::Char('y') => {
+                    self.ui_state = UiState::NewGame;
+                    break;
+                }
+                Key::Char('n') | Key::Esc | Key::Ctrl('c') => {
                     self.ui_state = UiState::Quit;
                     break;
                 }
@@ -528,6 +534,11 @@ impl Ui {
         }
     }
 
+    pub fn run_new_game(&mut self, game_state: &mut GameState) {
+        *game_state = GameState::init(Card::ordered_deck());
+        self.ui_state = UiState::Game;
+    }
+
     pub fn run(&mut self, game_state: &mut GameState) {
         self.set_up_terminal();
         *game_state = GameState::almost_victory();
@@ -535,6 +546,7 @@ impl Ui {
 
         loop {
             match self.ui_state {
+                UiState::NewGame => self.run_new_game(game_state),
                 UiState::Game => self.run_game(game_state),
                 UiState::Victory => self.run_victory(game_state),
                 UiState::Quit => break,
