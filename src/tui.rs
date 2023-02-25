@@ -322,18 +322,61 @@ impl Ui {
         writeln!(self.stdout, "{}{}", cursor::Goto(col, row), text).unwrap();
     }
 
+    fn scrolled_column(
+        cards: &Vec<(Card, CardState)>,
+        selected: usize,
+    ) -> Option<Vec<(Card, CardState)>> {
+        use std::cmp::min;
+        const MAX_VISIBLE: usize = 7;
+        if cards.len() <= MAX_VISIBLE {
+            return None;
+        }
+
+        let range = cards.len() - MAX_VISIBLE;
+        let a = cards.len() - min(selected, cards.len());
+        let b = min(a, range);
+
+        return Some(cards[b..b + MAX_VISIBLE].into());
+    }
+
+    /// A column's active selection count; 0 if not selected.
+    fn selection_count(&mut self, column_index: usize) -> usize {
+        if let Selection::Column { index, card_count } = self.cursor {
+            if column_index == index as usize {
+                return card_count as usize;
+            }
+        }
+        if let Some(Selection::Column { index, card_count }) = self.selected {
+            if column_index == index as usize {
+                return card_count as usize;
+            }
+        }
+        0
+    }
+
     const COLUMNS_INIT_COL: u16 = 8;
     const COLUMNS_INIT_ROW: u16 = 2;
     const COLUMNS_COL_STEP: u16 = 5;
     const COLUMNS_ROW_STEP: u16 = 1;
     fn display_columns(&mut self, game_state: &GameState) {
+        use termion::color::*;
         let (init_col, init_row) = (Self::COLUMNS_INIT_COL, Self::COLUMNS_INIT_ROW);
         let mut col = init_col;
-        for column in &game_state.columns {
+        for (index, column) in game_state.columns.iter().enumerate() {
             let mut row = init_row;
-            for (card, card_state) in &column.0 {
-                self.display_card(*card, *card_state, col, row, game_state);
-                row += Self::COLUMNS_ROW_STEP;
+            if let Some(cards) = Self::scrolled_column(&column.0, self.selection_count(index)) {
+                writeln!(self.stdout, "{}{}", Fg(White), Bg(Green)).unwrap();
+                self.draw_text(col - 1, row, "↑  ↑");
+
+                for (card, card_state) in cards {
+                    self.display_card(card, card_state, col, row, game_state);
+                    row += Self::COLUMNS_ROW_STEP;
+                }
+            } else {
+                for (card, card_state) in &column.0 {
+                    self.display_card(*card, *card_state, col, row, game_state);
+                    row += Self::COLUMNS_ROW_STEP;
+                }
             }
             col += Self::COLUMNS_COL_STEP;
         }
