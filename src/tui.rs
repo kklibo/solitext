@@ -96,23 +96,12 @@ impl Selection {
     pub fn select_up(&mut self, game_state: &GameState, debug_mode: bool) {
         *self = match *self {
             x @ Self::Deck => x,
-            Self::Column { index, card_count } => {
-                let mut new_count = card_count;
-                if debug_mode {
-                    // In debug mode, allow selection of face-down cards
-                    if (card_count as usize) < game_state.columns[index as usize].0.len() {
-                        new_count += 1;
-                    }
-                } else {
-                    // Only allow selection of face-up cards
-                    if (card_count as usize) < game_state.columns[index as usize].face_up_cards() {
-                        new_count += 1;
-                    }
-                };
-                Self::Column {
-                    index,
-                    card_count: new_count,
-                }
+            Self::Column {
+                index,
+                mut card_count,
+            } => {
+                card_count += 1;
+                Self::Column { index, card_count }
             }
             Self::Pile { index } if index > 0 => Self::Pile { index: index - 1 },
             x @ Self::Pile { .. } => x,
@@ -132,6 +121,24 @@ impl Selection {
                 Self::Pile { index: index + 1 }
             }
             x @ Self::Pile { .. } => x,
+        }
+    }
+
+    pub fn apply_column_selection_rules(&mut self, game_state: &GameState, debug_mode: bool) {
+        if let Self::Column { index, card_count } = *self {
+            let max_count = if debug_mode {
+                // In debug mode, allow selection of face-down cards
+                game_state.columns[index as usize].0.len()
+            } else {
+                // Only allow selection of face-up cards
+                game_state.columns[index as usize].face_up_cards()
+            };
+
+            //todo: fix usize -> u8 conversion
+            *self = Self::Column {
+                index,
+                card_count: std::cmp::min(card_count, max_count as u8),
+            }
         }
     }
 
@@ -476,6 +483,14 @@ impl Ui {
         }
     }
 
+    fn apply_column_selection_rules(&mut self, game_state: &mut GameState) {
+        self.cursor
+            .apply_column_selection_rules(game_state, self.debug_mode);
+        if let Some(mut selected) = self.selected {
+            selected.apply_column_selection_rules(game_state, self.debug_mode);
+        }
+    }
+
     /// Actions run on each user turn
     /// Returns: true IFF UiState has changed
     fn turn_actions(&mut self, game_state: &mut GameState) -> bool {
@@ -483,6 +498,9 @@ impl Ui {
         game_logic::face_up_on_columns(game_state);
         // If the deck is empty, reload from the discard pile (if any)
         game_state.reload_deck();
+        // Fix column selections, if needed
+        self.apply_column_selection_rules(game_state);
+
         // (Any other automatic state changes can go here too)
 
         if game_logic::victory(game_state) {
