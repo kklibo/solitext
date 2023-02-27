@@ -178,6 +178,11 @@ enum UiState {
     Quit,
 }
 
+enum CardColumnScroll {
+    AtMaxRow,
+    AtMinRow,
+}
+
 impl Ui {
     pub fn new() -> Self {
         Self {
@@ -265,7 +270,8 @@ impl Ui {
         card_count: u8,
     ) {
         let length = game_state.columns[index as usize].0.len();
-        let scroll = Self::scrolled_column_offset(length, card_count as usize).unwrap_or(0);
+        let (scroll, _) =
+            Self::scrolled_column_offset(length, card_count as usize).unwrap_or((0, None));
 
         let upper = Self::COLUMNS_INIT_ROW
             + Self::COLUMNS_ROW_STEP
@@ -335,8 +341,11 @@ impl Ui {
     }
 
     const COLUMN_MAX_VISIBLE_CARDS: usize = 7;
-    /// Scrolled offset in card column, or None if not scrolled
-    fn scrolled_column_offset(cards: usize, selected: usize) -> Option<usize> {
+    /// Scrolled offset in card column + position info, or None if not scrolled
+    fn scrolled_column_offset(
+        cards: usize,
+        selected: usize,
+    ) -> Option<(usize, Option<CardColumnScroll>)> {
         use std::cmp::min;
         if cards <= Self::COLUMN_MAX_VISIBLE_CARDS {
             return None;
@@ -344,16 +353,28 @@ impl Ui {
 
         let range = cards - Self::COLUMN_MAX_VISIBLE_CARDS;
         let a = cards - min(selected, cards);
-        Some(min(a, range))
+        let offset = min(a, range);
+
+        let position = match offset {
+            0 => Some(CardColumnScroll::AtMaxRow),
+            x if x == range => Some(CardColumnScroll::AtMinRow),
+            _ => None,
+        };
+
+        Some((offset, position))
     }
 
     /// A scrolled card column's visible cards, or None if not scrolled
     fn scrolled_column(
         cards: &Vec<(Card, CardState)>,
         selected: usize,
-    ) -> Option<Vec<(Card, CardState)>> {
-        Self::scrolled_column_offset(cards.len(), selected)
-            .map(|offset| cards[offset..offset + Self::COLUMN_MAX_VISIBLE_CARDS].into())
+    ) -> Option<(Vec<(Card, CardState)>, Option<CardColumnScroll>)> {
+        Self::scrolled_column_offset(cards.len(), selected).map(|(offset, position)| {
+            (
+                cards[offset..offset + Self::COLUMN_MAX_VISIBLE_CARDS].into(),
+                position,
+            )
+        })
     }
 
     /// A column's active selection count; 0 if not selected.
@@ -381,9 +402,21 @@ impl Ui {
         let mut col = init_col;
         for (index, column) in game_state.columns.iter().enumerate() {
             let mut row = init_row;
-            if let Some(cards) = Self::scrolled_column(&column.0, self.selection_count(index)) {
-                writeln!(self.stdout, "{}{}", Fg(White), Bg(Green)).unwrap();
-                self.draw_text(col - 1, row, "↑  ↑");
+            if let Some((cards, position)) =
+                Self::scrolled_column(&column.0, self.selection_count(index))
+            {
+                if !matches!(position, Some(CardColumnScroll::AtMaxRow)) {
+                    writeln!(self.stdout, "{}{}", Fg(White), Bg(Green)).unwrap();
+                    self.draw_text(col - 1, row, "↑  ↑");
+                }
+                if !matches!(position, Some(CardColumnScroll::AtMinRow)) {
+                    writeln!(self.stdout, "{}{}", Fg(White), Bg(Green)).unwrap();
+                    self.draw_text(
+                        col - 1,
+                        row - 1 + (cards.len() as u16 * Self::COLUMNS_ROW_STEP),
+                        "↓  ↓",
+                    );
+                }
 
                 for (card, card_state) in cards {
                     self.display_card(card, card_state, col, row, game_state);
