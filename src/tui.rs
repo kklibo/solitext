@@ -341,7 +341,7 @@ impl Ui {
                     }
                     card.to_string()
                 } else {
-                    writeln!(self.stdout, "{}{}", Fg(Blue), Bg(LightBlack)).unwrap();
+                    writeln!(self.stdout, "{}{}", Fg(LightGreen), Bg(LightBlack)).unwrap();
                     "st".to_string()
                 }
             }
@@ -486,6 +486,10 @@ impl Ui {
             Fg(LightBlack),
         )
         .unwrap();
+
+        self.set_colors(LightBlack, Self::default_bg());
+        let (col, row) = (2, Self::CURSOR_ROW + 1);
+        self.draw_text(col, row, "Space: Select/Move cards");
 
         let (col, row) = (2, Self::CURSOR_ROW + 2);
         writeln!(
