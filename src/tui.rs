@@ -264,11 +264,23 @@ impl Ui {
         index: u8,
         card_count: u8,
     ) {
+        let length = game_state.columns[index as usize].0.len();
+        let scroll = Self::scrolled_column_offset(length, card_count as usize).unwrap_or(0);
+
         let upper = Self::COLUMNS_INIT_ROW
-            + Self::COLUMNS_ROW_STEP * (game_state.columns[index as usize].0.len()) as u16;
+            + Self::COLUMNS_ROW_STEP
+                * length
+                    .checked_sub(scroll)
+                    .expect("column scroll should not exceed total cards") as u16;
         let lower = upper
             .checked_sub(card_count as u16)
             .expect("should not select nonexistent cards");
+
+        // Don't draw past the end of the column
+        let upper = std::cmp::min(
+            upper,
+            Self::COLUMNS_INIT_ROW + Self::COLUMNS_ROW_STEP * Self::COLUMN_MAX_VISIBLE_CARDS as u16,
+        );
 
         for row in lower..upper {
             self.draw_selection_char(col - 1, row, "[");
@@ -322,21 +334,26 @@ impl Ui {
         writeln!(self.stdout, "{}{}", cursor::Goto(col, row), text).unwrap();
     }
 
+    const COLUMN_MAX_VISIBLE_CARDS: usize = 7;
+    /// Scrolled offset in card column, or None if not scrolled
+    fn scrolled_column_offset(cards: usize, selected: usize) -> Option<usize> {
+        use std::cmp::min;
+        if cards <= Self::COLUMN_MAX_VISIBLE_CARDS {
+            return None;
+        }
+
+        let range = cards - Self::COLUMN_MAX_VISIBLE_CARDS;
+        let a = cards - min(selected, cards);
+        Some(min(a, range))
+    }
+
+    /// A scrolled card column's visible cards, or None if not scrolled
     fn scrolled_column(
         cards: &Vec<(Card, CardState)>,
         selected: usize,
     ) -> Option<Vec<(Card, CardState)>> {
-        use std::cmp::min;
-        const MAX_VISIBLE: usize = 7;
-        if cards.len() <= MAX_VISIBLE {
-            return None;
-        }
-
-        let range = cards.len() - MAX_VISIBLE;
-        let a = cards.len() - min(selected, cards.len());
-        let b = min(a, range);
-
-        return Some(cards[b..b + MAX_VISIBLE].into());
+        Self::scrolled_column_offset(cards.len(), selected)
+            .map(|offset| cards[offset..offset + Self::COLUMN_MAX_VISIBLE_CARDS].into())
     }
 
     /// A column's active selection count; 0 if not selected.
