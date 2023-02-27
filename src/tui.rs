@@ -205,18 +205,25 @@ impl Ui {
         self.display_columns(game_state);
         self.display_piles(game_state);
 
-        self.set_colors(color::Blue, color::Reset);
+        self.set_colors(color::Blue, Self::default_bg());
         self.display_column_selection_cursor();
 
-        self.set_colors(color::Reset, color::LightGreen);
+        self.set_colors(Self::default_fg(), color::LightGreen);
         self.display_card_selection_cursor(self.cursor, game_state);
 
-        self.set_colors(color::Reset, color::LightYellow);
+        self.set_colors(Self::default_fg(), color::LightYellow);
         if let Some(selected) = self.selected {
             self.display_card_selection_cursor(selected, game_state);
         }
 
-        self.set_colors(color::Reset, color::Reset);
+        self.set_colors(Self::default_fg(), Self::default_bg());
+    }
+
+    fn default_bg() -> impl color::Color {
+        color::Reset
+    }
+    fn default_fg() -> impl color::Color {
+        color::Reset
     }
 
     fn set_colors(&mut self, foreground: impl color::Color, background: impl color::Color) {
@@ -256,7 +263,7 @@ impl Ui {
             }
             Selection::Pile { index } => self.draw_pile_selection_cursor(col, index),
         };
-        writeln!(self.stdout, "{}", color::Bg(color::Reset),).unwrap();
+        writeln!(self.stdout, "{}", color::Bg(Self::default_bg()),).unwrap();
     }
 
     fn draw_deck_selection_cursor(&mut self, col: u16, row: u16) {
@@ -522,8 +529,10 @@ impl Ui {
     fn restore_terminal(&mut self) {
         write!(
             self.stdout,
-            "{}{}{}",
+            "{}{}{}{}{}",
             clear::All,
+            color::Fg(color::Reset),
+            color::Bg(color::Reset),
             cursor::Goto(1, 1),
             cursor::Show,
         )
@@ -685,13 +694,13 @@ impl Ui {
             thread::sleep(time::Duration::from_millis(300));
         }
 
-        self.set_colors(color::Blue, color::Reset);
+        self.set_colors(color::Blue, Self::default_bg());
         draw_box(self, 3);
         pause();
-        self.set_colors(color::Green, color::Reset);
+        self.set_colors(color::Green, Self::default_bg());
         draw_box(self, 2);
         pause();
-        self.set_colors(color::Red, color::Reset);
+        self.set_colors(color::Red, Self::default_bg());
         draw_box(self, 1);
         pause();
 
@@ -699,7 +708,7 @@ impl Ui {
         self.draw_text(CENTER.0 - 3, CENTER.1, "YOU WIN");
         pause();
         pause();
-        self.set_colors(color::Reset, color::Reset);
+        self.set_colors(Self::default_fg(), Self::default_bg());
         self.draw_text(CENTER.0 - 8, CENTER.1 + 4, "Play again? (y/n)");
     }
 
@@ -712,7 +721,7 @@ impl Ui {
 
         self.display_victory_message(game_state);
 
-        self.set_colors(color::Reset, color::Reset);
+        self.set_colors(Self::default_fg(), Self::default_bg());
         self.stdout.flush().unwrap();
     }
 
@@ -722,7 +731,7 @@ impl Ui {
         }
 
         writeln!(self.stdout, "{}", clear::All).unwrap();
-        self.set_colors(color::Reset, color::Reset);
+        self.set_colors(Self::default_fg(), Self::default_bg());
 
         self.draw_text(1, 1, "haha you ran this program");
         pause();
@@ -740,7 +749,7 @@ impl Ui {
         pause();
         pause();
 
-        self.set_colors(color::Reset, color::Reset);
+        self.set_colors(Self::default_fg(), Self::default_bg());
         self.stdout.flush().unwrap();
         self.ui_state = UiState::NewGame;
     }
@@ -788,9 +797,9 @@ impl Ui {
                 CENTER.1 + size,
             );
         }
-        self.set_colors(color::LightBlue, color::Reset);
+        self.set_colors(color::LightBlue, Self::default_bg());
         draw_box(self, 4);
-        self.set_colors(color::White, color::Reset);
+        self.set_colors(color::White, Self::default_bg());
         draw_box(self, 3);
 
         self.set_colors(color::LightBlack, color::White);
@@ -812,7 +821,7 @@ impl Ui {
 
         stdin().keys().next();
 
-        self.set_colors(color::Reset, color::Reset);
+        self.set_colors(Self::default_fg(), Self::default_bg());
         self.stdout.flush().unwrap();
     }
 
