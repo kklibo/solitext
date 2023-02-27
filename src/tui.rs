@@ -471,6 +471,13 @@ impl Ui {
         use cursor::*;
 
         writeln!(self.stdout, "{}{}Solitext", Goto(1, 1), Fg(LightYellow),).unwrap();
+        writeln!(
+            self.stdout,
+            "{}{}h: Help  Esc: Quit",
+            Goto(32, 1),
+            Fg(LightBlack),
+        )
+        .unwrap();
 
         let (col, row) = (2, Self::CURSOR_ROW + 2);
         writeln!(
@@ -814,7 +821,7 @@ impl Ui {
 
         //todo: remove
         self.ui_state = UiState::Game;
-        //*game_state = GameState::almost_victory();
+        *game_state = GameState::almost_victory();
         //
 
         loop {
