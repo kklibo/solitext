@@ -199,6 +199,7 @@ impl Ui {
 
     fn display_game_state(&mut self, game_state: &GameState) {
         writeln!(self.stdout, "{}", clear::All,).unwrap();
+        self.set_colors(Self::default_fg(), Self::default_bg());
 
         self.display_info(game_state);
         self.display_deck(game_state);
@@ -220,10 +221,10 @@ impl Ui {
     }
 
     fn default_bg() -> impl color::Color {
-        color::Reset
+        color::Black
     }
     fn default_fg() -> impl color::Color {
-        color::Reset
+        color::LightWhite
     }
 
     fn set_colors(&mut self, foreground: impl color::Color, background: impl color::Color) {
@@ -523,16 +524,26 @@ impl Ui {
     }
 
     fn set_up_terminal(&mut self) {
-        writeln!(self.stdout, "{}", cursor::Hide).unwrap();
+        write!(
+            self.stdout,
+            "{}{}{}{}{}",
+            color::Fg(Self::default_fg()),
+            color::Bg(Self::default_bg()),
+            clear::All,
+            cursor::Goto(1, 1),
+            cursor::Hide,
+        )
+        .unwrap();
+        self.stdout.flush().unwrap();
     }
 
     fn restore_terminal(&mut self) {
         write!(
             self.stdout,
             "{}{}{}{}{}",
-            clear::All,
             color::Fg(color::Reset),
             color::Bg(color::Reset),
+            clear::All,
             cursor::Goto(1, 1),
             cursor::Show,
         )
@@ -844,8 +855,8 @@ impl Ui {
         }
 
         self.restore_terminal();
-        self.draw_text(1,1, "please send bug reports via IRC or ham radio");
-        self.draw_text(1,1, "");
+        self.draw_text(1, 1, "please send bug reports via IRC or ham radio");
+        self.draw_text(1, 1, "");
     }
 }
 
