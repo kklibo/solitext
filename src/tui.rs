@@ -650,6 +650,7 @@ impl Ui {
                 Key::Char('x') => self.selected = None,
                 Key::Char('z') if self.debug_mode => self.debug_check_valid(game_state),
                 Key::Char('d') => self.debug_mode = !self.debug_mode,
+                Key::Char('h') => self.run_help(game_state),
                 Key::Esc | Key::Ctrl('c') => {
                     self.ui_state = UiState::Quit;
                     break;
@@ -761,6 +762,51 @@ impl Ui {
     pub fn run_new_game(&mut self, game_state: &mut GameState) {
         *game_state = GameState::init(Card::ordered_deck());
         self.ui_state = UiState::Game;
+    }
+
+    pub fn run_help(&mut self, game_state: &mut GameState) {
+        writeln!(self.stdout, "{}", clear::All).unwrap();
+        //just display cards
+        self.display_deck(game_state);
+        self.display_columns(game_state);
+        self.display_piles(game_state);
+
+        const CENTER: (u16, u16) = (26, 5);
+        const WIDTH_VAL: u16 = 15;
+        fn draw_box(s: &mut Ui, size: u16) {
+            s.draw_box(
+                CENTER.0 - WIDTH_VAL - size,
+                CENTER.1 - size,
+                CENTER.0 + WIDTH_VAL + size,
+                CENTER.1 + size,
+            );
+        }
+        self.set_colors(color::LightBlue, color::Reset);
+        draw_box(self, 4);
+        self.set_colors(color::White, color::Reset);
+        draw_box(self, 3);
+
+        self.set_colors(color::LightBlack, color::White);
+        const INIT_TEXT: (u16, u16) = (8, 2);
+        let (mut col, mut row) = INIT_TEXT;
+        self.draw_text(col, row, "Controls:");
+        row += 1;
+        row += 1;
+        col += 1;
+        self.draw_text(col, row, "Arrow keys, Home, End: Move cursor");
+        row += 1;
+        self.draw_text(col, row, "Enter: Hit/move card to stack");
+        row += 1;
+        self.draw_text(col, row, "Space: Select/move cards");
+        row += 1;
+        self.draw_text(col, row, "x: Clear selection");
+        row += 1;
+        self.draw_text(col, row, "Esc, Ctrl+c: Quit");
+
+        stdin().keys().next();
+
+        self.set_colors(color::Reset, color::Reset);
+        self.stdout.flush().unwrap();
     }
 
     pub fn run(&mut self, game_state: &mut GameState) {
