@@ -166,6 +166,7 @@ pub struct Ui {
     stdout: RawTerminal<Stdout>,
     cursor: Selection,
     selected: Option<Selection>,
+    context_help_message: String,
     debug_message: String,
     debug_mode: bool,
 }
@@ -190,6 +191,7 @@ impl Ui {
             stdout: stdout().into_raw_mode().unwrap(),
             cursor: Selection::Deck,
             selected: None,
+            context_help_message: "".to_string(),
             debug_message: "".to_string(),
             debug_mode: true,
         }
@@ -469,8 +471,19 @@ impl Ui {
         use cursor::*;
 
         writeln!(self.stdout, "{}{}Solitext", Goto(1, 1), Fg(LightYellow),).unwrap();
+
+        let (col, row) = (2, Self::CURSOR_ROW + 2);
+        writeln!(
+            self.stdout,
+            "{}{}{}",
+            Goto(col, row),
+            Fg(LightBlack),
+            self.context_help_message
+        )
+        .unwrap();
+
         if self.debug_mode {
-            let (col, row) = (2, Self::CURSOR_ROW + 2);
+            let (col, row) = (2, Self::CURSOR_ROW + 3);
             writeln!(
                 self.stdout,
                 "{}{}debug: {}",
@@ -584,6 +597,15 @@ impl Ui {
         }
     }
 
+    fn set_context_help_message(&mut self, game_state: &mut GameState) {
+        self.context_help_message = match self.cursor {
+            Selection::Deck => "Enter: Hit",
+            Selection::Column { .. } => "Enter: Try to Move to Stack",
+            _ => "",
+        }
+        .to_string()
+    }
+
     /// Actions run on each user turn
     /// Returns: true IFF UiState has changed
     fn turn_actions(&mut self, game_state: &mut GameState) -> bool {
@@ -593,6 +615,8 @@ impl Ui {
         game_state.reload_deck();
         // Fix column selections, if needed
         self.apply_column_selection_rules(game_state);
+        // Update context help line
+        self.set_context_help_message(game_state);
 
         // (Any other automatic state changes can go here too)
 
