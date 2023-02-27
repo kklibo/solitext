@@ -844,6 +844,8 @@ impl Ui {
         }
 
         self.restore_terminal();
+        self.draw_text(1,1, "please send bug reports via IRC or ham radio");
+        self.draw_text(1,1, "");
     }
 }
 
