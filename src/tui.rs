@@ -126,6 +126,15 @@ impl Selection {
 
     pub fn apply_column_selection_rules(&mut self, game_state: &GameState, debug_mode: bool) {
         if let Self::Column { index, card_count } = *self {
+            // Prevent size zero selection for non-empty column
+            if !game_state.columns[index as usize].0.is_empty() && card_count == 0 {
+                *self = Self::Column {
+                    index,
+                    card_count: 1,
+                };
+                return;
+            }
+
             let max_count = if debug_mode {
                 // In debug mode, allow selection of face-down cards
                 game_state.columns[index as usize].0.len()
