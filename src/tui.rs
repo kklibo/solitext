@@ -196,6 +196,12 @@ impl Ui {
             debug_mode: true,
         }
     }
+    pub fn reset_for_new_game(&mut self) {
+        self.cursor = Selection::Deck;
+        self.selected = None;
+        self.debug_message.clear();
+        self.context_help_message.clear();
+    }
 
     fn display_game_state(&mut self, game_state: &GameState) {
         writeln!(self.stdout, "{}", clear::All,).unwrap();
@@ -800,6 +806,7 @@ impl Ui {
 
     pub fn run_new_game(&mut self, game_state: &mut GameState) {
         *game_state = GameState::init(Card::ordered_deck());
+        self.reset_for_new_game();
         self.ui_state = UiState::Game;
     }
 
