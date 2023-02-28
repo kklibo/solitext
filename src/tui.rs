@@ -603,8 +603,8 @@ impl Ui {
             } else {
                 self.debug_message = "invalid move".to_string();
             }
-        } else {
-            self.selected = Some(self.cursor)
+        } else if self.cursor.card_count() > 0 {
+            self.selected = Some(self.cursor);
         }
     }
 
