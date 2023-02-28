@@ -148,7 +148,7 @@ impl Selection {
         game_state: &'a mut GameState,
     ) -> &mut dyn CardCollection {
         match self {
-            Self::Deck => &mut game_state.deck,
+            Self::Deck => &mut game_state.deck_drawn,
             Self::Column { index, .. } => game_state
                 .columns
                 .get_mut(*index as usize)
@@ -474,7 +474,7 @@ impl Ui {
     fn display_deck(&mut self, game_state: &GameState) {
         use color::*;
         let (init_col, init_row) = (Self::DECK_INIT_COL, Self::DECK_INIT_ROW);
-        if let Some(card) = game_state.deck.last() {
+        if let Some(card) = game_state.deck_drawn.last() {
             self.display_card(*card, CardState::FaceUp, init_col, init_row, game_state);
         } else {
             writeln!(self.stdout, "{}{}", Fg(Green), Bg(LightBlack)).unwrap();
@@ -650,8 +650,8 @@ impl Ui {
     fn turn_actions(&mut self, game_state: &mut GameState) -> bool {
         // Ensure a face-up card at the end of each column
         game_logic::face_up_on_columns(game_state);
-        // If the deck is empty, reload from the discard pile (if any)
-        game_state.reload_deck();
+        // Hit if the deck has cards and the drawn deck is empty
+        game_state.auto_hit();
         // Fix column selections, if needed
         self.apply_column_selection_rules(game_state);
         // Update context help line
