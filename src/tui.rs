@@ -1,4 +1,4 @@
-use crate::cards::Card;
+use crate::cards::{Card, Suit};
 use crate::game_logic;
 use crate::game_state::GameState;
 use crate::game_state::{CardCollection, CardState};
@@ -449,12 +449,20 @@ impl Ui {
         use color::*;
         let (init_col, init_row) = (Self::PILES_INIT_COL, Self::PILES_INIT_ROW);
         let mut row = init_row;
-        for pile in &game_state.card_piles {
+        for (index, pile) in game_state.card_piles.iter().enumerate() {
             if let Some(card) = pile.0.last() {
                 self.display_card(*card, CardState::FaceUp, init_col, row, game_state);
             } else {
                 writeln!(self.stdout, "{}{}", Fg(Blue), Bg(LightBlack)).unwrap();
-                self.draw_text(init_col, row, " _");
+                self.draw_text(
+                    init_col,
+                    row,
+                    format!(
+                        "{}_",
+                        Suit::from_index(index as u8).expect("pile suit should exist")
+                    )
+                    .as_str(),
+                );
             };
 
             row += Self::PILES_ROW_STEP;
