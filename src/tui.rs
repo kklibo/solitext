@@ -202,7 +202,7 @@ impl Ui {
             selected: None,
             context_help_message: "".to_string(),
             debug_message: "".to_string(),
-            debug_mode: true,
+            debug_mode: false,
         }
     }
     pub fn reset_for_new_game(&mut self) {
@@ -814,7 +814,7 @@ impl Ui {
     }
 
     pub fn run_new_game(&mut self, game_state: &mut GameState) {
-        *game_state = GameState::init(Card::ordered_deck());
+        *game_state = GameState::init(Card::shuffled_deck());
         self.reset_for_new_game();
         self.ui_state = UiState::Game;
     }
@@ -866,11 +866,6 @@ impl Ui {
 
     pub fn run(&mut self, game_state: &mut GameState) {
         self.set_up_terminal();
-
-        //todo: remove
-        self.ui_state = UiState::Game;
-        *game_state = GameState::almost_victory();
-        //
 
         loop {
             match self.ui_state {
