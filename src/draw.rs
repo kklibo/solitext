@@ -1,6 +1,6 @@
 use crate::cards::{Card, Suit};
 use crate::game_state::{CardState, GameState};
-use crate::tui::Selection;
+use crate::selection::Selection;
 use std::io::{stdout, Stdout, Write};
 use std::{thread, time};
 use termion::raw::{IntoRawMode, RawTerminal};

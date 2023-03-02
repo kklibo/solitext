@@ -6,6 +6,7 @@ mod cards;
 mod draw;
 mod game_logic;
 mod game_state;
+mod selection;
 mod tui;
 
 fn main() {

@@ -1,6 +1,6 @@
 use crate::cards::{Card, Rank};
 use crate::game_state::{CardState, GameState};
-use crate::tui::Selection;
+use crate::selection::Selection;
 
 pub fn victory(game_state: &GameState) -> bool {
     for pile in &game_state.card_piles {

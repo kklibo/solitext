@@ -1,3 +1,4 @@
+use crate::game_state::{CardCollection, GameState};
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum Selection {
@@ -49,7 +50,7 @@ impl Selection {
             Self::Column { card_count, .. } => *card_count,
             _ => 1,
         }
-            .into()
+        .into()
     }
 
     /// for the Left key

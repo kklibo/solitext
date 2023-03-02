@@ -2,6 +2,7 @@ use crate::cards::Card;
 use crate::draw::Draw;
 use crate::game_logic;
 use crate::game_state::{CardCollection, GameState};
+use crate::selection::Selection;
 use std::io::stdin;
 use termion::event::Key;
 use termion::input::TermRead;
