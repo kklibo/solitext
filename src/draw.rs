@@ -2,6 +2,7 @@ use crate::cards::{Card, Suit};
 use crate::game_logic;
 use crate::game_state::GameState;
 use crate::game_state::{CardCollection, CardState};
+use crate::tui::Selection;
 use std::io::{stdin, stdout, Stdout, Write};
 use std::{thread, time};
 use termion::event::Key;
@@ -9,8 +10,7 @@ use termion::input::TermRead;
 use termion::raw::{IntoRawMode, RawTerminal};
 use termion::{clear, color, cursor};
 
-pub struct Ui {
-    ui_state: UiState,
+pub struct Draw {
     stdout: RawTerminal<Stdout>,
     cursor: Selection,
     selected: Option<Selection>,
@@ -24,10 +24,9 @@ enum CardColumnScroll {
     AtMinRow,
 }
 
-impl Ui {
+impl Draw {
     pub fn new() -> Self {
         Self {
-            ui_state: UiState::Intro,
             stdout: stdout().into_raw_mode().unwrap(),
             cursor: Selection::Deck,
             selected: None,
@@ -406,7 +405,7 @@ impl Ui {
     fn display_victory_message(&mut self, game_state: &mut GameState) {
         const CENTER: (u16, u16) = (26, 5);
         const WIDTH_VAL: u16 = 3;
-        fn draw_box(s: &mut Ui, size: u16) {
+        fn draw_box(s: &mut Draw, size: u16) {
             s.draw_box(
                 CENTER.0 - WIDTH_VAL - size,
                 CENTER.1 - size,
@@ -486,7 +485,7 @@ impl Ui {
 
         const CENTER: (u16, u16) = (26, 5);
         const WIDTH_VAL: u16 = 15;
-        fn draw_box(s: &mut Ui, size: u16) {
+        fn draw_box(s: &mut Draw, size: u16) {
             s.draw_box(
                 CENTER.0 - WIDTH_VAL - size,
                 CENTER.1 - size,
