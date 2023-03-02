@@ -1,14 +1,10 @@
-use crate::cards::{Card, Suit};
+use crate::cards::Card;
 use crate::draw::Draw;
 use crate::game_logic;
-use crate::game_state::GameState;
-use crate::game_state::{CardCollection, CardState};
-use std::io::{stdin, stdout, Stdout, Write};
-use std::{thread, time};
+use crate::game_state::{CardCollection, GameState};
+use std::io::stdin;
 use termion::event::Key;
 use termion::input::TermRead;
-use termion::raw::{IntoRawMode, RawTerminal};
-use termion::{clear, color, cursor};
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum Selection {
@@ -94,7 +90,7 @@ impl Selection {
     }
 
     /// for the Up key
-    pub fn select_up(&mut self, game_state: &GameState, debug_mode: bool) {
+    pub fn select_up(&mut self) {
         *self = match *self {
             x @ Self::Deck => x,
             Self::Column {
@@ -272,7 +268,7 @@ impl Ui {
         }
     }
 
-    fn set_context_help_message(&mut self, game_state: &mut GameState) {
+    fn set_context_help_message(&mut self) {
         self.draw.context_help_message = match self.draw.cursor {
             Selection::Deck => "Enter: Hit",
             Selection::Column { .. } => "Enter: Try to Move to Stack",
@@ -291,7 +287,7 @@ impl Ui {
         // Fix column selections, if needed
         self.apply_column_selection_rules(game_state);
         // Update context help line
-        self.set_context_help_message(game_state);
+        self.set_context_help_message();
 
         // (Any other automatic state changes can go here too)
 
@@ -315,7 +311,7 @@ impl Ui {
             match c.unwrap() {
                 Key::Left => self.draw.cursor.move_left(game_state),
                 Key::Right => self.draw.cursor.move_right(game_state),
-                Key::Up => self.draw.cursor.select_up(game_state, self.draw.debug_mode),
+                Key::Up => self.draw.cursor.select_up(),
                 Key::Down => self.draw.cursor.select_down(game_state),
                 Key::Home => self.draw.cursor = Selection::Deck,
                 Key::End => self.draw.cursor = Selection::Pile { index: 0 },
@@ -340,7 +336,7 @@ impl Ui {
         }
     }
 
-    fn run_intro(&mut self, game_state: &mut GameState) {
+    fn run_intro(&mut self) {
         self.draw.display_intro();
         self.ui_state = UiState::NewGame;
     }
@@ -380,7 +376,7 @@ impl Ui {
 
         loop {
             match self.ui_state {
-                UiState::Intro => self.run_intro(game_state),
+                UiState::Intro => self.run_intro(),
                 UiState::NewGame => self.run_new_game(game_state),
                 UiState::Game => self.run_game(game_state),
                 UiState::Victory => self.run_victory(game_state),

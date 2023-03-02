@@ -1,12 +1,8 @@
 use crate::cards::{Card, Suit};
-use crate::game_logic;
-use crate::game_state::GameState;
-use crate::game_state::{CardCollection, CardState};
+use crate::game_state::{CardState, GameState};
 use crate::tui::Selection;
-use std::io::{stdin, stdout, Stdout, Write};
+use std::io::{stdout, Stdout, Write};
 use std::{thread, time};
-use termion::event::Key;
-use termion::input::TermRead;
 use termion::raw::{IntoRawMode, RawTerminal};
 use termion::{clear, color, cursor};
 
@@ -40,7 +36,7 @@ impl Draw {
         writeln!(self.stdout, "{}", clear::All,).unwrap();
         self.set_colors(Self::default_fg(), Self::default_bg());
 
-        self.display_info(game_state);
+        self.display_info();
         self.display_deck(game_state);
         self.display_columns(game_state);
         self.display_piles(game_state);
@@ -153,14 +149,7 @@ impl Draw {
         writeln!(self.stdout, "{}{ch}", cursor::Goto(col, row),).unwrap();
     }
 
-    fn display_card(
-        &mut self,
-        card: Card,
-        card_state: CardState,
-        col: u16,
-        row: u16,
-        game_state: &GameState,
-    ) {
+    fn display_card(&mut self, card: Card, card_state: CardState, col: u16, row: u16) {
         use termion::color::*;
         let text = match card_state {
             CardState::FaceUp => {
@@ -268,12 +257,12 @@ impl Draw {
                 }
 
                 for (card, card_state) in cards {
-                    self.display_card(card, card_state, col, row, game_state);
+                    self.display_card(card, card_state, col, row);
                     row += Self::COLUMNS_ROW_STEP;
                 }
             } else {
                 for (card, card_state) in &column.0 {
-                    self.display_card(*card, *card_state, col, row, game_state);
+                    self.display_card(*card, *card_state, col, row);
                     row += Self::COLUMNS_ROW_STEP;
                 }
             }
@@ -290,7 +279,7 @@ impl Draw {
         let mut row = init_row;
         for (index, pile) in game_state.card_piles.iter().enumerate() {
             if let Some(card) = pile.0.last() {
-                self.display_card(*card, CardState::FaceUp, init_col, row, game_state);
+                self.display_card(*card, CardState::FaceUp, init_col, row);
             } else {
                 writeln!(self.stdout, "{}{}", Fg(Blue), Bg(LightBlack)).unwrap();
                 self.draw_text(
@@ -314,14 +303,14 @@ impl Draw {
         use color::*;
         let (init_col, init_row) = (Self::DECK_INIT_COL, Self::DECK_INIT_ROW);
         if let Some(card) = game_state.deck_drawn.last() {
-            self.display_card(*card, CardState::FaceUp, init_col, init_row, game_state);
+            self.display_card(*card, CardState::FaceUp, init_col, init_row);
         } else {
             writeln!(self.stdout, "{}{}", Fg(Green), Bg(LightBlack)).unwrap();
             self.draw_text(init_col, init_row, " O ");
         };
     }
 
-    fn display_info(&mut self, game_state: &GameState) {
+    fn display_info(&mut self) {
         use color::*;
         use cursor::*;
 
@@ -402,7 +391,7 @@ impl Draw {
         self.stdout.flush().unwrap();
     }
 
-    fn display_victory_message(&mut self, game_state: &mut GameState) {
+    fn display_victory_message(&mut self) {
         const CENTER: (u16, u16) = (26, 5);
         const WIDTH_VAL: u16 = 3;
         fn draw_box(s: &mut Draw, size: u16) {
@@ -442,7 +431,7 @@ impl Draw {
         self.display_columns(game_state);
         self.display_piles(game_state);
 
-        self.display_victory_message(game_state);
+        self.display_victory_message();
 
         self.set_colors(Self::default_fg(), Self::default_bg());
         self.stdout.flush().unwrap();
