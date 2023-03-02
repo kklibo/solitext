@@ -151,14 +151,6 @@ impl GameState {
         }
     }
 
-    pub fn column_is_empty(&self, index: u8) -> bool {
-        self.columns
-            .get(index as usize)
-            .expect("column should exist")
-            .0
-            .is_empty()
-    }
-
     pub fn deck_hit(&mut self) {
         if self.deck.is_empty() && !self.deck_drawn.is_empty() {
             self.deck = self.deck_drawn.clone();

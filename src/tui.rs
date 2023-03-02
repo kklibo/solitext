@@ -149,8 +149,8 @@ impl Ui {
         let stdin = stdin();
         for c in stdin.keys() {
             match c.unwrap() {
-                Key::Left => self.draw.cursor.move_left(game_state),
-                Key::Right => self.draw.cursor.move_right(game_state),
+                Key::Left => self.draw.cursor.move_left(),
+                Key::Right => self.draw.cursor.move_right(),
                 Key::Up => self.draw.cursor.select_up(),
                 Key::Down => self.draw.cursor.select_down(game_state),
                 Key::Home => self.draw.cursor = Selection::Deck,

@@ -8,12 +8,7 @@ pub enum Selection {
 }
 
 impl Selection {
-    fn card_column(index: u8, game_state: &GameState) -> Selection {
-        let card_count = if game_state.column_is_empty(index) {
-            0
-        } else {
-            1
-        };
+    fn new_column(index: u8, card_count: u8) -> Selection {
         Self::Column { index, card_count }
     }
 
@@ -54,29 +49,29 @@ impl Selection {
     }
 
     /// for the Left key
-    pub fn move_left(&mut self, game_state: &GameState) {
+    pub fn move_left(&mut self) {
         #[allow(clippy::assertions_on_constants)]
         {
             assert!(GameState::COLUMN_COUNT > 0);
         }
         *self = match *self {
             x @ Self::Deck => x,
-            Self::Column { index, .. } if index > 0 => Self::card_column(index - 1, game_state),
+            Self::Column { index, .. } if index > 0 => Self::new_column(index - 1, 0),
             Self::Column { .. } => Self::Deck,
-            Self::Pile { .. } => Self::card_column(GameState::COLUMN_COUNT - 1, game_state),
+            Self::Pile { .. } => Self::new_column(GameState::COLUMN_COUNT - 1, 0),
         };
     }
 
     /// for the Right key
-    pub fn move_right(&mut self, game_state: &GameState) {
+    pub fn move_right(&mut self) {
         #[allow(clippy::assertions_on_constants)]
         {
             assert!(GameState::COLUMN_COUNT > 0);
         }
         *self = match *self {
-            Self::Deck => Self::card_column(0, game_state),
+            Self::Deck => Self::new_column(0, 0),
             Self::Column { index, .. } if index < GameState::COLUMN_COUNT - 1 => {
-                Self::card_column(index + 1, game_state)
+                Self::new_column(index + 1, 0)
             }
             Self::Column { .. } => Self::Pile { index: 0 },
             x @ Self::Pile { .. } => x,
