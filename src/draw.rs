@@ -33,7 +33,7 @@ impl Draw {
     }
 
     pub fn display_game_state(&mut self, game_state: &GameState) {
-        writeln!(self.stdout, "{}", clear::All,).unwrap();
+        self.clear_screen();
         self.set_colors(Self::default_fg(), Self::default_bg());
 
         self.display_info();
@@ -53,6 +53,10 @@ impl Draw {
         }
 
         self.set_colors(Self::default_fg(), Self::default_bg());
+    }
+
+    fn clear_screen(&mut self) {
+        writeln!(self.stdout, "{}", clear::All,).unwrap();
     }
 
     fn default_bg() -> impl color::Color {
@@ -85,8 +89,7 @@ impl Draw {
     const CURSOR_ROW: u16 = 10;
     fn display_column_selection_cursor(&mut self) {
         let col = Self::selection_col(self.cursor);
-
-        writeln!(self.stdout, "{}█↑█", cursor::Goto(col, Self::CURSOR_ROW),).unwrap();
+        self.draw_text(col, Self::CURSOR_ROW, "█↑█");
     }
 
     fn display_card_selection_cursor(&mut self, selection: Selection, game_state: &GameState) {
@@ -99,7 +102,6 @@ impl Draw {
             }
             Selection::Pile { index } => self.draw_pile_selection_cursor(col, index),
         };
-        writeln!(self.stdout, "{}", color::Bg(Self::default_bg()),).unwrap();
     }
 
     fn draw_deck_selection_cursor(&mut self, col: u16, row: u16) {
@@ -146,7 +148,7 @@ impl Draw {
     }
 
     fn draw_selection_char(&mut self, col: u16, row: u16, ch: &str) {
-        writeln!(self.stdout, "{}{ch}", cursor::Goto(col, row),).unwrap();
+        self.draw_text(col, row, ch);
     }
 
     fn display_card(&mut self, card: Card, card_state: CardState, col: u16, row: u16) {
@@ -154,28 +156,28 @@ impl Draw {
         let text = match card_state {
             CardState::FaceUp => {
                 if card.suit.is_red() {
-                    writeln!(self.stdout, "{}{}", Fg(Red), Bg(White)).unwrap();
+                    self.set_colors(Red, White);
                 } else {
-                    writeln!(self.stdout, "{}{}", Fg(Black), Bg(White)).unwrap();
+                    self.set_colors(Black, White);
                 }
                 card.to_string()
             }
             CardState::FaceDown => {
                 if self.debug_mode {
                     if card.suit.is_red() {
-                        writeln!(self.stdout, "{}{}", Fg(LightRed), Bg(Black)).unwrap();
+                        self.set_colors(LightRed, Black);
                     } else {
-                        writeln!(self.stdout, "{}{}", Fg(LightBlack), Bg(Black)).unwrap();
+                        self.set_colors(LightBlack, Black);
                     }
                     card.to_string()
                 } else {
-                    writeln!(self.stdout, "{}{}", Fg(LightGreen), Bg(LightBlack)).unwrap();
+                    self.set_colors(LightGreen, LightBlack);
                     "st".to_string()
                 }
             }
         };
 
-        writeln!(self.stdout, "{}{}", cursor::Goto(col, row), text).unwrap();
+        self.draw_text(col, row, text.as_str());
     }
 
     const COLUMN_MAX_VISIBLE_CARDS: usize = 7;
@@ -244,11 +246,11 @@ impl Draw {
                 Self::scrolled_column(&column.0, self.selection_count(index))
             {
                 if !matches!(position, Some(CardColumnScroll::AtMaxRow)) {
-                    writeln!(self.stdout, "{}{}", Fg(White), Bg(Green)).unwrap();
+                    self.set_colors(White, Green);
                     self.draw_text(col - 1, row, "↑  ↑");
                 }
                 if !matches!(position, Some(CardColumnScroll::AtMinRow)) {
-                    writeln!(self.stdout, "{}{}", Fg(White), Bg(Green)).unwrap();
+                    self.set_colors(White, Green);
                     self.draw_text(
                         col - 1,
                         row - 1 + (cards.len() as u16 * Self::COLUMNS_ROW_STEP),
@@ -281,7 +283,7 @@ impl Draw {
             if let Some(card) = pile.0.last() {
                 self.display_card(*card, CardState::FaceUp, init_col, row);
             } else {
-                writeln!(self.stdout, "{}{}", Fg(Blue), Bg(LightBlack)).unwrap();
+                self.set_colors(Blue, LightBlack);
                 self.draw_text(
                     init_col,
                     row,
@@ -305,48 +307,27 @@ impl Draw {
         if let Some(card) = game_state.deck_drawn.last() {
             self.display_card(*card, CardState::FaceUp, init_col, init_row);
         } else {
-            writeln!(self.stdout, "{}{}", Fg(Green), Bg(LightBlack)).unwrap();
+            self.set_colors(Green, LightBlack);
             self.draw_text(init_col, init_row, " O ");
         };
     }
 
     fn display_info(&mut self) {
         use color::*;
-        use cursor::*;
 
-        writeln!(self.stdout, "{}{}Solitext", Goto(1, 1), Fg(LightYellow),).unwrap();
-        writeln!(
-            self.stdout,
-            "{}{}h: Help  Esc: Quit",
-            Goto(32, 1),
-            Fg(LightBlack),
-        )
-        .unwrap();
+        self.set_colors(LightYellow, Self::default_bg());
+        self.draw_text(1, 1, "Solitext");
 
         self.set_colors(LightBlack, Self::default_bg());
-        let (col, row) = (2, Self::CURSOR_ROW + 1);
-        self.draw_text(col, row, "Space: Select/Move cards");
-
-        let (col, row) = (2, Self::CURSOR_ROW + 2);
-        writeln!(
-            self.stdout,
-            "{}{}{}",
-            Goto(col, row),
-            Fg(LightBlack),
-            self.context_help_message
-        )
-        .unwrap();
-
+        self.draw_text(32, 1, "h: Help  Esc: Quit");
+        self.draw_text(2, Self::CURSOR_ROW + 1, "Space: Select/Move cards");
+        self.draw_text(
+            2,
+            Self::CURSOR_ROW + 2,
+            self.context_help_message.clone().as_str(),
+        );
         if self.debug_mode {
-            let (col, row) = (2, Self::CURSOR_ROW + 3);
-            writeln!(
-                self.stdout,
-                "{}{}debug: {}",
-                Goto(col, row),
-                Fg(LightBlack),
-                self.debug_message
-            )
-            .unwrap();
+            self.draw_text(2, Self::CURSOR_ROW + 3, self.debug_message.clone().as_str());
         }
     }
 
@@ -354,7 +335,7 @@ impl Draw {
         use std::cmp::{max, min};
         for col in min(col1, col2)..=max(col1, col2) {
             for row in min(row1, row2)..=max(row1, row2) {
-                writeln!(self.stdout, "{}█", cursor::Goto(col, row)).unwrap();
+                self.draw_text(col, row, "█");
             }
         }
     }
@@ -364,7 +345,7 @@ impl Draw {
     }
 
     pub fn set_up_terminal(&mut self) {
-        write!(
+        writeln!(
             self.stdout,
             "{}{}{}{}{}",
             color::Fg(Self::default_fg()),
@@ -378,7 +359,7 @@ impl Draw {
     }
 
     pub fn restore_terminal(&mut self) {
-        write!(
+        writeln!(
             self.stdout,
             "{}{}{}{}{}",
             color::Fg(color::Reset),
@@ -425,7 +406,7 @@ impl Draw {
     }
 
     pub fn display_victory(&mut self, game_state: &mut GameState) {
-        writeln!(self.stdout, "{}", clear::All).unwrap();
+        self.clear_screen();
         //just display cards
         self.display_deck(game_state);
         self.display_columns(game_state);
@@ -442,7 +423,7 @@ impl Draw {
             thread::sleep(time::Duration::from_millis(500));
         }
 
-        writeln!(self.stdout, "{}", clear::All).unwrap();
+        self.clear_screen();
         self.set_colors(Self::default_fg(), Self::default_bg());
 
         self.draw_text(1, 1, "haha you ran this program");
@@ -466,7 +447,7 @@ impl Draw {
     }
 
     pub fn display_help(&mut self, game_state: &mut GameState) {
-        writeln!(self.stdout, "{}", clear::All).unwrap();
+        self.clear_screen();
         //just display cards
         self.display_deck(game_state);
         self.display_columns(game_state);
