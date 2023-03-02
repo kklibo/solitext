@@ -763,7 +763,7 @@ impl Ui {
         self.stdout.flush().unwrap();
     }
 
-    fn run_intro(&mut self, game_state: &mut GameState) {
+    fn display_intro(&mut self) {
         fn pause() {
             thread::sleep(time::Duration::from_millis(500));
         }
@@ -789,6 +789,10 @@ impl Ui {
 
         self.set_colors(Self::default_fg(), Self::default_bg());
         self.stdout.flush().unwrap();
+    }
+
+    fn run_intro(&mut self, game_state: &mut GameState) {
+        self.display_intro();
         self.ui_state = UiState::NewGame;
     }
 
@@ -819,7 +823,7 @@ impl Ui {
         self.ui_state = UiState::Game;
     }
 
-    pub fn run_help(&mut self, game_state: &mut GameState) {
+    fn display_help(&mut self, game_state: &mut GameState) {
         writeln!(self.stdout, "{}", clear::All).unwrap();
         //just display cards
         self.display_deck(game_state);
@@ -858,10 +862,13 @@ impl Ui {
         row += 1;
         self.draw_text(col, row, "Esc, Ctrl+c: Quit");
 
-        stdin().keys().next();
-
         self.set_colors(Self::default_fg(), Self::default_bg());
         self.stdout.flush().unwrap();
+    }
+
+    pub fn run_help(&mut self, game_state: &mut GameState) {
+        self.display_help(game_state);
+        stdin().keys().next();
     }
 
     pub fn run(&mut self, game_state: &mut GameState) {
