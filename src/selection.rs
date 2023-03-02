@@ -4,12 +4,12 @@ use std::cmp::{max, min};
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum Selection {
     Deck,
-    Column { index: u8, card_count: u8 },
-    Pile { index: u8 },
+    Column { index: usize, card_count: usize },
+    Pile { index: usize },
 }
 
 impl Selection {
-    fn new_column(index: u8, card_count: u8) -> Selection {
+    fn new_column(index: usize, card_count: usize) -> Selection {
         Self::Column { index, card_count }
     }
 
@@ -46,7 +46,6 @@ impl Selection {
             Self::Column { card_count, .. } => *card_count,
             _ => 1,
         }
-        .into()
     }
 
     /// for the Left key
@@ -110,7 +109,7 @@ impl Selection {
     pub fn apply_column_selection_rules(&mut self, game_state: &GameState, debug_mode: bool) {
         if let Self::Column { index, card_count } = *self {
             // Prevent size zero selection for non-empty column
-            if !game_state.columns[index as usize].0.is_empty() && card_count == 0 {
+            if !game_state.columns[index].0.is_empty() && card_count == 0 {
                 *self = Self::Column {
                     index,
                     card_count: 1,
@@ -120,16 +119,15 @@ impl Selection {
 
             let max_count = if debug_mode {
                 // In debug mode, allow selection of face-down cards
-                game_state.columns[index as usize].0.len()
+                game_state.columns[index].0.len()
             } else {
                 // Only allow selection of face-up cards
-                game_state.columns[index as usize].face_up_cards()
+                game_state.columns[index].face_up_cards()
             };
 
-            //todo: fix usize -> u8 conversion
             *self = Self::Column {
                 index,
-                card_count: min(card_count, max_count as u8),
+                card_count: min(card_count, max_count),
             }
         }
     }
@@ -143,11 +141,11 @@ impl Selection {
             Self::Deck => &mut game_state.deck_drawn,
             Self::Column { index, .. } => game_state
                 .columns
-                .get_mut(*index as usize)
+                .get_mut(*index)
                 .expect("selected card column should exist"),
             Self::Pile { index } => game_state
                 .card_piles
-                .get_mut(*index as usize)
+                .get_mut(*index)
                 .expect("selected card pile should exist"),
         }
     }

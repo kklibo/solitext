@@ -64,7 +64,7 @@ impl Suit {
             Self::Spades | Self::Clubs => false,
         }
     }
-    pub fn from_index(index: u8) -> Option<Self> {
+    pub fn from_index(index: usize) -> Option<Self> {
         use Suit::*;
         match index {
             0 => Some(Hearts),

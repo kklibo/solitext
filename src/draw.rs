@@ -76,17 +76,17 @@ impl Draw {
         .unwrap();
     }
 
-    fn selection_col(selection: Selection) -> u16 {
+    fn selection_col(selection: Selection) -> usize {
         match selection {
             Selection::Deck => Self::DECK_INIT_COL,
             Selection::Column { index, .. } => {
-                Self::COLUMNS_INIT_COL + (index as u16) * Self::COLUMNS_COL_STEP
+                Self::COLUMNS_INIT_COL + index * Self::COLUMNS_COL_STEP
             }
             Selection::Pile { .. } => Self::PILES_INIT_COL,
         }
     }
 
-    const CURSOR_ROW: u16 = 10;
+    const CURSOR_ROW: usize = 10;
     fn display_column_selection_cursor(&mut self) {
         let col = Self::selection_col(self.cursor);
         self.draw_text(col, Self::CURSOR_ROW, "█↑█");
@@ -104,7 +104,7 @@ impl Draw {
         };
     }
 
-    fn draw_deck_selection_cursor(&mut self, col: u16, row: u16) {
+    fn draw_deck_selection_cursor(&mut self, col: usize, row: usize) {
         self.draw_text(col + 2, row, "◂");
         self.draw_text(col - 2, row, "▸");
     }
@@ -112,27 +112,26 @@ impl Draw {
     fn draw_card_column_selection_cursor(
         &mut self,
         game_state: &GameState,
-        col: u16,
-        index: u8,
-        card_count: u8,
+        col: usize,
+        index: usize,
+        card_count: usize,
     ) {
-        let length = game_state.columns[index as usize].0.len();
-        let (scroll, _) =
-            Self::scrolled_column_offset(length, card_count as usize).unwrap_or((0, None));
+        let length = game_state.columns[index].0.len();
+        let (scroll, _) = Self::scrolled_column_offset(length, card_count).unwrap_or((0, None));
 
         let upper = Self::COLUMNS_INIT_ROW
             + Self::COLUMNS_ROW_STEP
                 * length
                     .checked_sub(scroll)
-                    .expect("column scroll should not exceed total cards") as u16;
+                    .expect("column scroll should not exceed total cards");
         let lower = upper
-            .checked_sub(card_count as u16)
+            .checked_sub(card_count)
             .expect("should not select nonexistent cards");
 
         // Don't draw past the end of the column
         let upper = std::cmp::min(
             upper,
-            Self::COLUMNS_INIT_ROW + Self::COLUMNS_ROW_STEP * Self::COLUMN_MAX_VISIBLE_CARDS as u16,
+            Self::COLUMNS_INIT_ROW + Self::COLUMNS_ROW_STEP * Self::COLUMN_MAX_VISIBLE_CARDS,
         );
 
         for row in lower..upper {
@@ -141,13 +140,13 @@ impl Draw {
         }
     }
 
-    fn draw_pile_selection_cursor(&mut self, col: u16, index: u8) {
-        let row = Self::PILES_INIT_ROW + Self::PILES_ROW_STEP * index as u16;
+    fn draw_pile_selection_cursor(&mut self, col: usize, index: usize) {
+        let row = Self::PILES_INIT_ROW + Self::PILES_ROW_STEP * index;
         self.draw_text(col - 1, row, "[");
         self.draw_text(col + 3, row, "]");
     }
 
-    fn display_card(&mut self, card: Card, card_state: CardState, col: u16, row: u16) {
+    fn display_card(&mut self, card: Card, card_state: CardState, col: usize, row: usize) {
         use termion::color::*;
         let text = match card_state {
             CardState::FaceUp => {
@@ -216,22 +215,22 @@ impl Draw {
     /// A column's active selection count; 0 if not selected.
     fn selection_count(&mut self, column_index: usize) -> usize {
         if let Selection::Column { index, card_count } = self.cursor {
-            if column_index == index as usize {
-                return card_count as usize;
+            if column_index == index {
+                return card_count;
             }
         }
         if let Some(Selection::Column { index, card_count }) = self.selected {
-            if column_index == index as usize {
-                return card_count as usize;
+            if column_index == index {
+                return card_count;
             }
         }
         0
     }
 
-    const COLUMNS_INIT_COL: u16 = 8;
-    const COLUMNS_INIT_ROW: u16 = 2;
-    const COLUMNS_COL_STEP: u16 = 5;
-    const COLUMNS_ROW_STEP: u16 = 1;
+    const COLUMNS_INIT_COL: usize = 8;
+    const COLUMNS_INIT_ROW: usize = 2;
+    const COLUMNS_COL_STEP: usize = 5;
+    const COLUMNS_ROW_STEP: usize = 1;
     fn display_columns(&mut self, game_state: &GameState) {
         use termion::color::*;
         let (init_col, init_row) = (Self::COLUMNS_INIT_COL, Self::COLUMNS_INIT_ROW);
@@ -249,7 +248,7 @@ impl Draw {
                     self.set_colors(White, Green);
                     self.draw_text(
                         col - 1,
-                        row - 1 + (cards.len() as u16 * Self::COLUMNS_ROW_STEP),
+                        row - 1 + (cards.len() * Self::COLUMNS_ROW_STEP),
                         "↓  ↓",
                     );
                 }
@@ -268,9 +267,9 @@ impl Draw {
         }
     }
 
-    const PILES_INIT_COL: u16 = 48;
-    const PILES_INIT_ROW: u16 = 2;
-    const PILES_ROW_STEP: u16 = 2;
+    const PILES_INIT_COL: usize = 48;
+    const PILES_INIT_ROW: usize = 2;
+    const PILES_ROW_STEP: usize = 2;
     fn display_piles(&mut self, game_state: &GameState) {
         use color::*;
         let (init_col, init_row) = (Self::PILES_INIT_COL, Self::PILES_INIT_ROW);
@@ -285,7 +284,7 @@ impl Draw {
                     row,
                     format!(
                         "{}_",
-                        Suit::from_index(index as u8).expect("pile suit should exist")
+                        Suit::from_index(index).expect("pile suit should exist")
                     )
                     .as_str(),
                 );
@@ -295,8 +294,8 @@ impl Draw {
         }
     }
 
-    const DECK_INIT_COL: u16 = 2;
-    const DECK_INIT_ROW: u16 = 2;
+    const DECK_INIT_COL: usize = 2;
+    const DECK_INIT_ROW: usize = 2;
     fn display_deck(&mut self, game_state: &GameState) {
         use color::*;
         let (init_col, init_row) = (Self::DECK_INIT_COL, Self::DECK_INIT_ROW);
@@ -327,7 +326,7 @@ impl Draw {
         }
     }
 
-    fn draw_box(&mut self, col1: u16, row1: u16, col2: u16, row2: u16) {
+    fn draw_box(&mut self, col1: usize, row1: usize, col2: usize, row2: usize) {
         use std::cmp::{max, min};
         for col in min(col1, col2)..=max(col1, col2) {
             for row in min(row1, row2)..=max(row1, row2) {
@@ -336,7 +335,10 @@ impl Draw {
         }
     }
 
-    pub fn draw_text(&mut self, col: u16, row: u16, text: &str) {
+    pub fn draw_text(&mut self, col: usize, row: usize, text: &str) {
+        let col = u16::try_from(col).expect("column should fit in a u16");
+        let row = u16::try_from(row).expect("row should fit in a u16");
+
         writeln!(self.stdout, "{}{}", cursor::Goto(col, row), text).unwrap();
     }
 
@@ -369,9 +371,9 @@ impl Draw {
     }
 
     fn display_victory_message(&mut self) {
-        const CENTER: (u16, u16) = (26, 5);
-        const WIDTH_VAL: u16 = 3;
-        fn draw_box(s: &mut Draw, size: u16) {
+        const CENTER: (usize, usize) = (26, 5);
+        const WIDTH_VAL: usize = 3;
+        fn draw_box(s: &mut Draw, size: usize) {
             s.draw_box(
                 CENTER.0 - WIDTH_VAL - size,
                 CENTER.1 - size,
@@ -449,9 +451,9 @@ impl Draw {
         self.display_columns(game_state);
         self.display_piles(game_state);
 
-        const CENTER: (u16, u16) = (26, 5);
-        const WIDTH_VAL: u16 = 15;
-        fn draw_box(s: &mut Draw, size: u16) {
+        const CENTER: (usize, usize) = (26, 5);
+        const WIDTH_VAL: usize = 15;
+        fn draw_box(s: &mut Draw, size: usize) {
             s.draw_box(
                 CENTER.0 - WIDTH_VAL - size,
                 CENTER.1 - size,
@@ -465,7 +467,7 @@ impl Draw {
         draw_box(self, 3);
 
         self.set_colors(color::LightBlack, color::White);
-        const INIT_TEXT: (u16, u16) = (8, 2);
+        const INIT_TEXT: (usize, usize) = (8, 2);
         let (mut col, mut row) = INIT_TEXT;
         self.draw_text(col, row, "Controls:");
         row += 1;
