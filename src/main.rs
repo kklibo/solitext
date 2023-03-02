@@ -3,6 +3,7 @@ use crate::game_state::GameState;
 use crate::tui::Ui;
 
 mod cards;
+mod draw;
 mod game_logic;
 mod game_state;
 mod tui;
