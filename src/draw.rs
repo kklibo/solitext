@@ -105,8 +105,8 @@ impl Draw {
     }
 
     fn draw_deck_selection_cursor(&mut self, col: u16, row: u16) {
-        self.draw_selection_char(col + 2, row, "◂");
-        self.draw_selection_char(col - 2, row, "▸");
+        self.draw_text(col + 2, row, "◂");
+        self.draw_text(col - 2, row, "▸");
     }
 
     fn draw_card_column_selection_cursor(
@@ -136,19 +136,15 @@ impl Draw {
         );
 
         for row in lower..upper {
-            self.draw_selection_char(col - 1, row, "[");
-            self.draw_selection_char(col + 3, row, "]");
+            self.draw_text(col - 1, row, "[");
+            self.draw_text(col + 3, row, "]");
         }
     }
 
     fn draw_pile_selection_cursor(&mut self, col: u16, index: u8) {
         let row = Self::PILES_INIT_ROW + Self::PILES_ROW_STEP * index as u16;
-        self.draw_selection_char(col - 1, row, "[");
-        self.draw_selection_char(col + 3, row, "]");
-    }
-
-    fn draw_selection_char(&mut self, col: u16, row: u16, ch: &str) {
-        self.draw_text(col, row, ch);
+        self.draw_text(col - 1, row, "[");
+        self.draw_text(col + 3, row, "]");
     }
 
     fn display_card(&mut self, card: Card, card_state: CardState, col: u16, row: u16) {
