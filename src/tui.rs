@@ -1,4 +1,5 @@
 use crate::cards::{Card, Suit};
+use crate::draw::Draw;
 use crate::game_logic;
 use crate::game_state::GameState;
 use crate::game_state::{CardCollection, CardState};
@@ -172,12 +173,7 @@ impl Selection {
 
 pub struct Ui {
     ui_state: UiState,
-    stdout: RawTerminal<Stdout>,
-    cursor: Selection,
-    selected: Option<Selection>,
-    context_help_message: String,
-    debug_message: String,
-    debug_mode: bool,
+    draw: Draw,
 }
 
 enum UiState {
@@ -192,19 +188,14 @@ impl Ui {
     pub fn new() -> Self {
         Self {
             ui_state: UiState::Intro,
-            stdout: stdout().into_raw_mode().unwrap(),
-            cursor: Selection::Deck,
-            selected: None,
-            context_help_message: "".to_string(),
-            debug_message: "".to_string(),
-            debug_mode: false,
+            draw: Draw::new(),
         }
     }
     pub fn reset_for_new_game(&mut self) {
-        self.cursor = Selection::Deck;
-        self.selected = None;
-        self.debug_message.clear();
-        self.context_help_message.clear();
+        self.draw.cursor = Selection::Deck;
+        self.draw.selected = None;
+        self.draw.debug_message.clear();
+        self.draw.context_help_message.clear();
     }
 
     fn move_cards(from: Selection, to: Selection, game_state: &mut GameState) -> Result<(), ()> {
@@ -221,26 +212,26 @@ impl Ui {
     }
 
     fn cards_action(&mut self, game_state: &mut GameState) {
-        if let (Some(from), to) = (self.selected, self.cursor) {
-            self.selected = None;
+        if let (Some(from), to) = (self.draw.selected, self.draw.cursor) {
+            self.draw.selected = None;
 
             if game_logic::valid_move(from, to, game_state).is_ok() {
                 match Self::move_cards(from, to, game_state) {
-                    Ok(_) => self.debug_message = "move OK".to_string(),
-                    Err(_) => self.debug_message = "move attempt failed".to_string(),
+                    Ok(_) => self.draw.debug_message = "move OK".to_string(),
+                    Err(_) => self.draw.debug_message = "move attempt failed".to_string(),
                 }
             } else {
-                self.debug_message = "invalid move".to_string();
+                self.draw.debug_message = "invalid move".to_string();
             }
-        } else if self.cursor.card_count() > 0 {
-            self.selected = Some(self.cursor);
+        } else if self.draw.cursor.card_count() > 0 {
+            self.draw.selected = Some(self.draw.cursor);
         }
     }
 
     fn enter_key_action(&mut self, game_state: &mut GameState) {
-        if matches!(self.cursor, Selection::Deck) {
+        if matches!(self.draw.cursor, Selection::Deck) {
             game_state.deck_hit();
-        } else if let Selection::Column { index, .. } = self.cursor {
+        } else if let Selection::Column { index, .. } = self.draw.cursor {
             let from = Selection::Column {
                 index,
                 card_count: 1,
@@ -256,32 +247,33 @@ impl Ui {
     }
 
     fn debug_unchecked_cards_action(&mut self, game_state: &mut GameState) {
-        if let Some(selected) = self.selected {
-            self.selected = None;
-            let _ = Self::move_cards(selected, self.cursor, game_state);
+        if let Some(selected) = self.draw.selected {
+            self.draw.selected = None;
+            let _ = Self::move_cards(selected, self.draw.cursor, game_state);
         } else {
-            self.selected = Some(self.cursor)
+            self.draw.selected = Some(self.draw.cursor)
         }
     }
 
     fn debug_check_valid(&mut self, game_state: &mut GameState) {
-        if let (Some(from), to) = (self.selected, self.cursor) {
-            self.debug_message = format!("{:?}", game_logic::valid_move(from, to, game_state));
+        if let (Some(from), to) = (self.draw.selected, self.draw.cursor) {
+            self.draw.debug_message = format!("{:?}", game_logic::valid_move(from, to, game_state));
         } else {
-            self.debug_message = "".to_string();
+            self.draw.debug_message = "".to_string();
         }
     }
 
     fn apply_column_selection_rules(&mut self, game_state: &mut GameState) {
-        self.cursor
-            .apply_column_selection_rules(game_state, self.debug_mode);
-        if let Some(mut selected) = self.selected {
-            selected.apply_column_selection_rules(game_state, self.debug_mode);
+        self.draw
+            .cursor
+            .apply_column_selection_rules(game_state, self.draw.debug_mode);
+        if let Some(mut selected) = self.draw.selected {
+            selected.apply_column_selection_rules(game_state, self.draw.debug_mode);
         }
     }
 
     fn set_context_help_message(&mut self, game_state: &mut GameState) {
-        self.context_help_message = match self.cursor {
+        self.draw.context_help_message = match self.draw.cursor {
             Selection::Deck => "Enter: Hit",
             Selection::Column { .. } => "Enter: Try to Move to Stack",
             _ => "",
@@ -304,12 +296,12 @@ impl Ui {
         // (Any other automatic state changes can go here too)
 
         if game_logic::victory(game_state) {
-            self.debug_message = "Victory".to_string();
+            self.draw.debug_message = "Victory".to_string();
             self.ui_state = UiState::Victory;
             return true;
         }
 
-        self.display_game_state(game_state);
+        self.draw.display_game_state(game_state);
         false
     }
 
@@ -321,18 +313,20 @@ impl Ui {
         let stdin = stdin();
         for c in stdin.keys() {
             match c.unwrap() {
-                Key::Left => self.cursor.move_left(game_state),
-                Key::Right => self.cursor.move_right(game_state),
-                Key::Up => self.cursor.select_up(game_state, self.debug_mode),
-                Key::Down => self.cursor.select_down(game_state),
-                Key::Home => self.cursor = Selection::Deck,
-                Key::End => self.cursor = Selection::Pile { index: 0 },
+                Key::Left => self.draw.cursor.move_left(game_state),
+                Key::Right => self.draw.cursor.move_right(game_state),
+                Key::Up => self.draw.cursor.select_up(game_state, self.draw.debug_mode),
+                Key::Down => self.draw.cursor.select_down(game_state),
+                Key::Home => self.draw.cursor = Selection::Deck,
+                Key::End => self.draw.cursor = Selection::Pile { index: 0 },
                 Key::Char(' ') => self.cards_action(game_state),
                 Key::Char('\n') => self.enter_key_action(game_state),
-                Key::Char('c') if self.debug_mode => self.debug_unchecked_cards_action(game_state),
-                Key::Char('x') => self.selected = None,
-                Key::Char('z') if self.debug_mode => self.debug_check_valid(game_state),
-                Key::Char('d') => self.debug_mode = !self.debug_mode,
+                Key::Char('c') if self.draw.debug_mode => {
+                    self.debug_unchecked_cards_action(game_state)
+                }
+                Key::Char('x') => self.draw.selected = None,
+                Key::Char('z') if self.draw.debug_mode => self.debug_check_valid(game_state),
+                Key::Char('d') => self.draw.debug_mode = !self.draw.debug_mode,
                 Key::Char('h') => self.run_help(game_state),
                 Key::Esc | Key::Ctrl('c') => {
                     self.ui_state = UiState::Quit;
@@ -347,12 +341,12 @@ impl Ui {
     }
 
     fn run_intro(&mut self, game_state: &mut GameState) {
-        self.display_intro();
+        self.draw.display_intro();
         self.ui_state = UiState::NewGame;
     }
 
     fn run_victory(&mut self, game_state: &mut GameState) {
-        self.display_victory(game_state);
+        self.draw.display_victory(game_state);
 
         let stdin = stdin();
         for c in stdin.keys() {
@@ -367,8 +361,6 @@ impl Ui {
                 }
                 _ => {}
             }
-
-            self.stdout.flush().unwrap();
         }
     }
 
@@ -379,12 +371,12 @@ impl Ui {
     }
 
     pub fn run_help(&mut self, game_state: &mut GameState) {
-        self.display_help(game_state);
+        self.draw.display_help(game_state);
         stdin().keys().next();
     }
 
     pub fn run(&mut self, game_state: &mut GameState) {
-        self.set_up_terminal();
+        self.draw.set_up_terminal();
 
         loop {
             match self.ui_state {
@@ -396,9 +388,10 @@ impl Ui {
             }
         }
 
-        self.restore_terminal();
-        self.draw_text(1, 1, "please send bug reports via IRC or ham radio");
-        self.draw_text(1, 1, "");
+        self.draw.restore_terminal();
+        self.draw
+            .draw_text(1, 1, "please send bug reports via IRC or ham radio");
+        self.draw.draw_text(1, 1, "");
     }
 }
 

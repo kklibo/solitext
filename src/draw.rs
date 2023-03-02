@@ -12,11 +12,11 @@ use termion::{clear, color, cursor};
 
 pub struct Draw {
     stdout: RawTerminal<Stdout>,
-    cursor: Selection,
-    selected: Option<Selection>,
-    context_help_message: String,
-    debug_message: String,
-    debug_mode: bool,
+    pub cursor: Selection,
+    pub selected: Option<Selection>,
+    pub context_help_message: String,
+    pub debug_message: String,
+    pub debug_mode: bool,
 }
 
 enum CardColumnScroll {
@@ -36,7 +36,7 @@ impl Draw {
         }
     }
 
-    fn display_game_state(&mut self, game_state: &GameState) {
+    pub fn display_game_state(&mut self, game_state: &GameState) {
         writeln!(self.stdout, "{}", clear::All,).unwrap();
         self.set_colors(Self::default_fg(), Self::default_bg());
 
@@ -370,11 +370,11 @@ impl Draw {
         }
     }
 
-    fn draw_text(&mut self, col: u16, row: u16, text: &str) {
+    pub fn draw_text(&mut self, col: u16, row: u16, text: &str) {
         writeln!(self.stdout, "{}{}", cursor::Goto(col, row), text).unwrap();
     }
 
-    fn set_up_terminal(&mut self) {
+    pub fn set_up_terminal(&mut self) {
         write!(
             self.stdout,
             "{}{}{}{}{}",
@@ -388,7 +388,7 @@ impl Draw {
         self.stdout.flush().unwrap();
     }
 
-    fn restore_terminal(&mut self) {
+    pub fn restore_terminal(&mut self) {
         write!(
             self.stdout,
             "{}{}{}{}{}",
@@ -435,7 +435,7 @@ impl Draw {
         self.draw_text(CENTER.0 - 8, CENTER.1 + 4, "Play again? (y/n)");
     }
 
-    fn display_victory(&mut self, game_state: &mut GameState) {
+    pub fn display_victory(&mut self, game_state: &mut GameState) {
         writeln!(self.stdout, "{}", clear::All).unwrap();
         //just display cards
         self.display_deck(game_state);
@@ -448,7 +448,7 @@ impl Draw {
         self.stdout.flush().unwrap();
     }
 
-    fn display_intro(&mut self) {
+    pub fn display_intro(&mut self) {
         fn pause() {
             thread::sleep(time::Duration::from_millis(500));
         }
@@ -476,7 +476,7 @@ impl Draw {
         self.stdout.flush().unwrap();
     }
 
-    fn display_help(&mut self, game_state: &mut GameState) {
+    pub fn display_help(&mut self, game_state: &mut GameState) {
         writeln!(self.stdout, "{}", clear::All).unwrap();
         //just display cards
         self.display_deck(game_state);
