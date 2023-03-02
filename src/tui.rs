@@ -152,7 +152,7 @@ impl Ui {
                 Key::Left => self.draw.cursor.move_left(),
                 Key::Right => self.draw.cursor.move_right(),
                 Key::Up => self.draw.cursor.select_up(),
-                Key::Down => self.draw.cursor.select_down(game_state),
+                Key::Down => self.draw.cursor.select_down(),
                 Key::Home => self.draw.cursor = Selection::Deck,
                 Key::End => self.draw.cursor = Selection::Pile { index: 0 },
                 Key::Char(' ') => self.cards_action(game_state),

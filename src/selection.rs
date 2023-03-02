@@ -1,4 +1,5 @@
 use crate::game_state::{CardCollection, GameState};
+use std::cmp::{max, min};
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum Selection {
@@ -81,32 +82,28 @@ impl Selection {
     /// for the Up key
     pub fn select_up(&mut self) {
         *self = match *self {
-            x @ Self::Deck => x,
-            Self::Column {
+            Self::Deck => Self::Deck,
+            Self::Column { index, card_count } => Self::Column {
                 index,
-                mut card_count,
-            } => {
-                card_count += 1;
-                Self::Column { index, card_count }
-            }
-            Self::Pile { index } if index > 0 => Self::Pile { index: index - 1 },
-            x @ Self::Pile { .. } => x,
+                card_count: card_count + 1,
+            },
+            Self::Pile { index } => Self::Pile {
+                index: max(1, index) - 1,
+            },
         }
     }
 
     /// for the Down key
-    pub fn select_down(&mut self, game_state: &GameState) {
+    pub fn select_down(&mut self) {
         *self = match *self {
-            x @ Self::Deck => x,
-            Self::Column { index, card_count } if (card_count as usize) > 0 => Self::Column {
+            Self::Deck => Self::Deck,
+            Self::Column { index, card_count } => Self::Column {
                 index,
-                card_count: card_count - 1,
+                card_count: max(1, card_count) - 1,
             },
-            x @ Self::Column { .. } => x,
-            Self::Pile { index } if (index as usize) < game_state.card_piles.len() - 1 => {
-                Self::Pile { index: index + 1 }
-            }
-            x @ Self::Pile { .. } => x,
+            Self::Pile { index } => Self::Pile {
+                index: min(GameState::CARD_PILES_COUNT - 1, index + 1),
+            },
         }
     }
 
@@ -132,7 +129,7 @@ impl Selection {
             //todo: fix usize -> u8 conversion
             *self = Self::Column {
                 index,
-                card_count: std::cmp::min(card_count, max_count as u8),
+                card_count: min(card_count, max_count as u8),
             }
         }
     }
