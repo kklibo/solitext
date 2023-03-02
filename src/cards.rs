@@ -21,12 +21,6 @@ pub enum Rank {
     King = 13,
 }
 
-impl Rank {
-    pub fn is_odd(self) -> bool {
-        self as u8 % 2 == 1
-    }
-}
-
 impl Display for Rank {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let v = match self {
@@ -101,6 +95,7 @@ impl Display for Card {
 }
 
 impl Card {
+    #[allow(dead_code)]
     pub fn new(suit: Suit, rank: Rank) -> Self {
         Self { suit, rank }
     }
@@ -126,13 +121,6 @@ impl Card {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use test_case::test_case;
-
-    #[test_case(Rank::Ace => true)]
-    #[test_case(Rank::R2 => false)]
-    fn test_rank_is_odd(rank: Rank) -> bool {
-        rank.is_odd()
-    }
 
     #[test]
     fn test_ordered_deck() {

@@ -20,6 +20,11 @@ enum CardColumnScroll {
     AtMinRow,
 }
 
+struct ScrolledColumn {
+    visible_cards: Vec<(Card, CardState)>,
+    at_edge: Option<CardColumnScroll>,
+}
+
 impl Draw {
     pub fn new() -> Self {
         Self {
@@ -200,15 +205,12 @@ impl Draw {
     }
 
     /// A scrolled card column's visible cards, or None if not scrolled
-    fn scrolled_column(
-        cards: &Vec<(Card, CardState)>,
-        selected: usize,
-    ) -> Option<(Vec<(Card, CardState)>, Option<CardColumnScroll>)> {
-        Self::scrolled_column_offset(cards.len(), selected).map(|(offset, position)| {
-            (
-                cards[offset..offset + Self::COLUMN_MAX_VISIBLE_CARDS].into(),
-                position,
-            )
+    fn scrolled_column(cards: &Vec<(Card, CardState)>, selected: usize) -> Option<ScrolledColumn> {
+        Self::scrolled_column_offset(cards.len(), selected).map(|(offset, at_edge)| {
+            ScrolledColumn {
+                visible_cards: cards[offset..offset + Self::COLUMN_MAX_VISIBLE_CARDS].into(),
+                at_edge,
+            }
         })
     }
 
@@ -237,23 +239,25 @@ impl Draw {
         let mut col = init_col;
         for (index, column) in game_state.columns.iter().enumerate() {
             let mut row = init_row;
-            if let Some((cards, position)) =
-                Self::scrolled_column(&column.0, self.selection_count(index))
+            if let Some(ScrolledColumn {
+                visible_cards,
+                at_edge,
+            }) = Self::scrolled_column(&column.0, self.selection_count(index))
             {
-                if !matches!(position, Some(CardColumnScroll::AtMaxRow)) {
+                if !matches!(at_edge, Some(CardColumnScroll::AtMaxRow)) {
                     self.set_colors(White, Green);
                     self.draw_text(col - 1, row, "↑  ↑");
                 }
-                if !matches!(position, Some(CardColumnScroll::AtMinRow)) {
+                if !matches!(at_edge, Some(CardColumnScroll::AtMinRow)) {
                     self.set_colors(White, Green);
                     self.draw_text(
                         col - 1,
-                        row - 1 + (cards.len() * Self::COLUMNS_ROW_STEP),
+                        row - 1 + (visible_cards.len() * Self::COLUMNS_ROW_STEP),
                         "↓  ↓",
                     );
                 }
 
-                for (card, card_state) in cards {
+                for (card, card_state) in visible_cards {
                     self.display_card(card, card_state, col, row);
                     row += Self::COLUMNS_ROW_STEP;
                 }

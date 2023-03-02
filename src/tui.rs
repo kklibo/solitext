@@ -1,7 +1,7 @@
 use crate::cards::Card;
 use crate::draw::Draw;
 use crate::game_logic;
-use crate::game_state::{CardCollection, GameState};
+use crate::game_state::GameState;
 use crate::selection::Selection;
 use std::io::stdin;
 use termion::event::Key;
@@ -283,6 +283,6 @@ mod tests {
     #[test]
     fn test_selected_collection() {
         let mut a = GameState::init(Card::ordered_deck());
-        let b = Selection::Deck.selected_collection(&mut a);
+        let _b = Selection::Deck.selected_collection(&mut a);
     }
 }

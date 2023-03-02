@@ -169,6 +169,7 @@ impl GameState {
         }
     }
 
+    #[allow(dead_code)]
     pub fn victory() -> Self {
         let mut card_piles: [CardPile; Self::CARD_PILES_COUNT] = Default::default();
 
@@ -188,6 +189,7 @@ impl GameState {
         }
     }
 
+    #[allow(dead_code)]
     pub fn almost_victory() -> Self {
         let mut x = Self::victory();
         x.columns[0]
