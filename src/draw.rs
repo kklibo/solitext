@@ -101,7 +101,11 @@ impl Draw {
         let col = Self::selection_col(selection);
 
         match selection {
-            Selection::Deck => self.draw_deck_selection_cursor(col, Self::DECK_INIT_ROW),
+            Selection::Deck => {
+                if let Some(row) = Self::deck_selection_cursor_row(game_state) {
+                    self.draw_deck_selection_cursor(col, row);
+                }
+            }
             Selection::Column { index, card_count } => {
                 self.draw_card_column_selection_cursor(game_state, col, index, card_count)
             }
@@ -300,15 +304,49 @@ impl Draw {
 
     const DECK_INIT_COL: usize = 2;
     const DECK_INIT_ROW: usize = 2;
+    const DECK_DRAWN_STEP: usize = 2;
+    const DECK_ROW_STEP: usize = 1;
+    const DECK_DRAWN_MAX_DISPLAY_CARDS: usize = 3;
     fn display_deck(&mut self, game_state: &GameState) {
         use color::*;
-        let (init_col, init_row) = (Self::DECK_INIT_COL, Self::DECK_INIT_ROW);
-        if let Some(card) = game_state.deck_drawn.last() {
-            self.display_card(*card, CardState::FaceUp, init_col, init_row);
+        let (col, mut row) = (Self::DECK_INIT_COL, Self::DECK_INIT_ROW);
+        if let Some(card) = game_state.deck.last() {
+            self.display_card(*card, CardState::FaceDown, col, row);
         } else {
             self.set_colors(Green, LightBlack);
-            self.draw_text(init_col, init_row, " O ");
+            self.draw_text(col, row, " O ");
         };
+
+        // display up to DECK_DRAWN_MAX_DISPLAY_CARDS cards from the top of the drawn pile
+        row += Self::DECK_DRAWN_STEP;
+        for card in game_state
+            .deck_drawn
+            .iter()
+            .rev()
+            .take(Self::DECK_DRAWN_MAX_DISPLAY_CARDS)
+            .rev()
+        {
+            self.display_card(*card, CardState::FaceUp, col, row);
+            row += Self::DECK_ROW_STEP;
+        }
+    }
+
+    fn deck_selection_cursor_row(game_state: &GameState) -> Option<usize> {
+        let displayed_cards = game_state
+            .deck_drawn
+            .iter()
+            .take(Self::DECK_DRAWN_MAX_DISPLAY_CARDS)
+            .count();
+
+        if displayed_cards > 0 {
+            Some(
+                Self::DECK_INIT_ROW
+                    + Self::DECK_DRAWN_STEP
+                    + Self::DECK_ROW_STEP * (displayed_cards - 1),
+            )
+        } else {
+            None
+        }
     }
 
     fn display_info(&mut self) {
