@@ -300,15 +300,21 @@ impl Draw {
 
     const DECK_INIT_COL: usize = 2;
     const DECK_INIT_ROW: usize = 2;
+    const DECK_DRAWN_STEP: usize = 2;
+    const DECK_ROW_STEP: usize = 1;
     fn display_deck(&mut self, game_state: &GameState) {
         use color::*;
-        let (init_col, init_row) = (Self::DECK_INIT_COL, Self::DECK_INIT_ROW);
-        if let Some(card) = game_state.deck_drawn.last() {
-            self.display_card(*card, CardState::FaceUp, init_col, init_row);
+        let (col, mut row) = (Self::DECK_INIT_COL, Self::DECK_INIT_ROW);
+        if let Some(card) = game_state.deck.last() {
+            self.display_card(*card, CardState::FaceDown, col, row);
         } else {
             self.set_colors(Green, LightBlack);
-            self.draw_text(init_col, init_row, " O ");
+            self.draw_text(col, row, " O ");
         };
+        row += Self::DECK_DRAWN_STEP;
+        if let Some(card) = game_state.deck_drawn.last() {
+            self.display_card(*card, CardState::FaceUp, col, row);
+        }
     }
 
     fn display_info(&mut self) {
