@@ -77,6 +77,7 @@ impl Ui {
                 let to = Selection::Pile { index: i };
                 if game_logic::valid_move(from, to, game_state).is_ok() {
                     let _ = Self::move_cards(from, to, game_state);
+                    break;
                 }
             }
         }
