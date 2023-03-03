@@ -124,7 +124,7 @@ impl Ui {
         // Ensure a face-up card at the end of each column
         game_logic::face_up_on_columns(game_state);
         // Hit if the deck has cards and the drawn deck is empty
-        game_state.auto_hit();
+        // game_state.auto_hit(); [disabled; should remove permanently?]
         // Fix column selections, if needed
         self.apply_column_selection_rules(game_state);
         // Update context help line

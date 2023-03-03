@@ -163,6 +163,7 @@ impl GameState {
         }
     }
 
+    #[allow(dead_code)]
     pub fn auto_hit(&mut self) {
         if !self.deck.is_empty() && self.deck_drawn.is_empty() {
             self.deck_hit();
