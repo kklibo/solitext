@@ -18,8 +18,8 @@ pub struct CardPile(pub Vec<Card>);
 pub struct GameState {
     pub deck: Vec<Card>,
     pub deck_drawn: Vec<Card>,
-    pub columns: [CardColumn; Self::COLUMN_COUNT as usize],
-    pub card_piles: [CardPile; Self::CARD_PILES_COUNT as usize],
+    pub columns: [CardColumn; Self::COLUMN_COUNT],
+    pub card_piles: [CardPile; Self::CARD_PILES_COUNT],
 }
 
 pub trait CardCollection {
@@ -127,12 +127,12 @@ impl CardColumn {
 }
 
 impl GameState {
-    pub const COLUMN_COUNT: u8 = 7;
-    pub const CARD_PILES_COUNT: u8 = 4;
+    pub const COLUMN_COUNT: usize = 7;
+    pub const CARD_PILES_COUNT: usize = 4;
 
     pub fn init(mut deck: Vec<Card>) -> Self {
-        let mut columns: [CardColumn; Self::COLUMN_COUNT as usize] = Default::default();
-        let card_piles: [CardPile; Self::CARD_PILES_COUNT as usize] = Default::default();
+        let mut columns: [CardColumn; Self::COLUMN_COUNT] = Default::default();
+        let card_piles: [CardPile; Self::CARD_PILES_COUNT] = Default::default();
 
         for (i, column) in columns.iter_mut().enumerate() {
             for _ in 0..=i {
@@ -149,14 +149,6 @@ impl GameState {
             columns,
             card_piles,
         }
-    }
-
-    pub fn column_is_empty(&self, index: u8) -> bool {
-        self.columns
-            .get(index as usize)
-            .expect("column should exist")
-            .0
-            .is_empty()
     }
 
     pub fn deck_hit(&mut self) {
@@ -177,8 +169,9 @@ impl GameState {
         }
     }
 
+    #[allow(dead_code)]
     pub fn victory() -> Self {
-        let mut card_piles: [CardPile; Self::CARD_PILES_COUNT as usize] = Default::default();
+        let mut card_piles: [CardPile; Self::CARD_PILES_COUNT] = Default::default();
 
         for (index, suit) in Suit::iter().enumerate() {
             for rank in Rank::iter() {
@@ -196,6 +189,7 @@ impl GameState {
         }
     }
 
+    #[allow(dead_code)]
     pub fn almost_victory() -> Self {
         let mut x = Self::victory();
         x.columns[0]

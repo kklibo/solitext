@@ -20,6 +20,11 @@ enum CardColumnScroll {
     AtMinRow,
 }
 
+struct ScrolledColumn {
+    visible_cards: Vec<(Card, CardState)>,
+    at_edge: Option<CardColumnScroll>,
+}
+
 impl Draw {
     pub fn new() -> Self {
         Self {
@@ -33,7 +38,7 @@ impl Draw {
     }
 
     pub fn display_game_state(&mut self, game_state: &GameState) {
-        writeln!(self.stdout, "{}", clear::All,).unwrap();
+        self.clear_screen();
         self.set_colors(Self::default_fg(), Self::default_bg());
 
         self.display_info();
@@ -55,6 +60,10 @@ impl Draw {
         self.set_colors(Self::default_fg(), Self::default_bg());
     }
 
+    fn clear_screen(&mut self) {
+        writeln!(self.stdout, "{}", clear::All,).unwrap();
+    }
+
     fn default_bg() -> impl color::Color {
         color::Black
     }
@@ -72,21 +81,20 @@ impl Draw {
         .unwrap();
     }
 
-    fn selection_col(selection: Selection) -> u16 {
+    fn selection_col(selection: Selection) -> usize {
         match selection {
             Selection::Deck => Self::DECK_INIT_COL,
             Selection::Column { index, .. } => {
-                Self::COLUMNS_INIT_COL + (index as u16) * Self::COLUMNS_COL_STEP
+                Self::COLUMNS_INIT_COL + index * Self::COLUMNS_COL_STEP
             }
             Selection::Pile { .. } => Self::PILES_INIT_COL,
         }
     }
 
-    const CURSOR_ROW: u16 = 10;
+    const CURSOR_ROW: usize = 10;
     fn display_column_selection_cursor(&mut self) {
         let col = Self::selection_col(self.cursor);
-
-        writeln!(self.stdout, "{}█↑█", cursor::Goto(col, Self::CURSOR_ROW),).unwrap();
+        self.draw_text(col, Self::CURSOR_ROW, "█↑█");
     }
 
     fn display_card_selection_cursor(&mut self, selection: Selection, game_state: &GameState) {
@@ -99,83 +107,77 @@ impl Draw {
             }
             Selection::Pile { index } => self.draw_pile_selection_cursor(col, index),
         };
-        writeln!(self.stdout, "{}", color::Bg(Self::default_bg()),).unwrap();
     }
 
-    fn draw_deck_selection_cursor(&mut self, col: u16, row: u16) {
-        self.draw_selection_char(col + 2, row, "◂");
-        self.draw_selection_char(col - 2, row, "▸");
+    fn draw_deck_selection_cursor(&mut self, col: usize, row: usize) {
+        self.draw_text(col + 2, row, "◂");
+        self.draw_text(col - 2, row, "▸");
     }
 
     fn draw_card_column_selection_cursor(
         &mut self,
         game_state: &GameState,
-        col: u16,
-        index: u8,
-        card_count: u8,
+        col: usize,
+        index: usize,
+        card_count: usize,
     ) {
-        let length = game_state.columns[index as usize].0.len();
-        let (scroll, _) =
-            Self::scrolled_column_offset(length, card_count as usize).unwrap_or((0, None));
+        let length = game_state.columns[index].0.len();
+        let (scroll, _) = Self::scrolled_column_offset(length, card_count).unwrap_or((0, None));
 
         let upper = Self::COLUMNS_INIT_ROW
             + Self::COLUMNS_ROW_STEP
                 * length
                     .checked_sub(scroll)
-                    .expect("column scroll should not exceed total cards") as u16;
+                    .expect("column scroll should not exceed total cards");
         let lower = upper
-            .checked_sub(card_count as u16)
+            .checked_sub(card_count)
             .expect("should not select nonexistent cards");
 
         // Don't draw past the end of the column
         let upper = std::cmp::min(
             upper,
-            Self::COLUMNS_INIT_ROW + Self::COLUMNS_ROW_STEP * Self::COLUMN_MAX_VISIBLE_CARDS as u16,
+            Self::COLUMNS_INIT_ROW + Self::COLUMNS_ROW_STEP * Self::COLUMN_MAX_VISIBLE_CARDS,
         );
 
         for row in lower..upper {
-            self.draw_selection_char(col - 1, row, "[");
-            self.draw_selection_char(col + 3, row, "]");
+            self.draw_text(col - 1, row, "[");
+            self.draw_text(col + 3, row, "]");
         }
     }
 
-    fn draw_pile_selection_cursor(&mut self, col: u16, index: u8) {
-        let row = Self::PILES_INIT_ROW + Self::PILES_ROW_STEP * index as u16;
-        self.draw_selection_char(col - 1, row, "[");
-        self.draw_selection_char(col + 3, row, "]");
+    fn draw_pile_selection_cursor(&mut self, col: usize, index: usize) {
+        let row = Self::PILES_INIT_ROW + Self::PILES_ROW_STEP * index;
+        self.draw_text(col - 1, row, "[");
+        self.draw_text(col + 3, row, "]");
     }
 
-    fn draw_selection_char(&mut self, col: u16, row: u16, ch: &str) {
-        writeln!(self.stdout, "{}{ch}", cursor::Goto(col, row),).unwrap();
-    }
-
-    fn display_card(&mut self, card: Card, card_state: CardState, col: u16, row: u16) {
+    fn display_card(&mut self, card: Card, card_state: CardState, col: usize, row: usize) {
         use termion::color::*;
         let text = match card_state {
             CardState::FaceUp => {
                 if card.suit.is_red() {
-                    writeln!(self.stdout, "{}{}", Fg(Red), Bg(White)).unwrap();
+                    self.set_colors(Red, White);
                 } else {
-                    writeln!(self.stdout, "{}{}", Fg(Black), Bg(White)).unwrap();
+                    self.set_colors(Black, White);
                 }
                 card.to_string()
             }
             CardState::FaceDown => {
                 if self.debug_mode {
                     if card.suit.is_red() {
-                        writeln!(self.stdout, "{}{}", Fg(LightRed), Bg(Black)).unwrap();
+                        self.set_colors(LightRed, Black);
                     } else {
-                        writeln!(self.stdout, "{}{}", Fg(LightBlack), Bg(Black)).unwrap();
+                        self.set_colors(LightBlack, Black);
                     }
                     card.to_string()
                 } else {
-                    writeln!(self.stdout, "{}{}", Fg(LightGreen), Bg(LightBlack)).unwrap();
+                    self.set_colors(LightGreen, LightBlack);
                     "st".to_string()
                 }
             }
         };
 
-        writeln!(self.stdout, "{}{}", cursor::Goto(col, row), text).unwrap();
+        self.draw_text(col, row, text.as_str());
     }
 
     const COLUMN_MAX_VISIBLE_CARDS: usize = 7;
@@ -203,60 +205,59 @@ impl Draw {
     }
 
     /// A scrolled card column's visible cards, or None if not scrolled
-    fn scrolled_column(
-        cards: &Vec<(Card, CardState)>,
-        selected: usize,
-    ) -> Option<(Vec<(Card, CardState)>, Option<CardColumnScroll>)> {
-        Self::scrolled_column_offset(cards.len(), selected).map(|(offset, position)| {
-            (
-                cards[offset..offset + Self::COLUMN_MAX_VISIBLE_CARDS].into(),
-                position,
-            )
+    fn scrolled_column(cards: &Vec<(Card, CardState)>, selected: usize) -> Option<ScrolledColumn> {
+        Self::scrolled_column_offset(cards.len(), selected).map(|(offset, at_edge)| {
+            ScrolledColumn {
+                visible_cards: cards[offset..offset + Self::COLUMN_MAX_VISIBLE_CARDS].into(),
+                at_edge,
+            }
         })
     }
 
     /// A column's active selection count; 0 if not selected.
     fn selection_count(&mut self, column_index: usize) -> usize {
         if let Selection::Column { index, card_count } = self.cursor {
-            if column_index == index as usize {
-                return card_count as usize;
+            if column_index == index {
+                return card_count;
             }
         }
         if let Some(Selection::Column { index, card_count }) = self.selected {
-            if column_index == index as usize {
-                return card_count as usize;
+            if column_index == index {
+                return card_count;
             }
         }
         0
     }
 
-    const COLUMNS_INIT_COL: u16 = 8;
-    const COLUMNS_INIT_ROW: u16 = 2;
-    const COLUMNS_COL_STEP: u16 = 5;
-    const COLUMNS_ROW_STEP: u16 = 1;
+    const COLUMNS_INIT_COL: usize = 8;
+    const COLUMNS_INIT_ROW: usize = 2;
+    const COLUMNS_COL_STEP: usize = 5;
+    const COLUMNS_ROW_STEP: usize = 1;
     fn display_columns(&mut self, game_state: &GameState) {
         use termion::color::*;
         let (init_col, init_row) = (Self::COLUMNS_INIT_COL, Self::COLUMNS_INIT_ROW);
         let mut col = init_col;
         for (index, column) in game_state.columns.iter().enumerate() {
             let mut row = init_row;
-            if let Some((cards, position)) =
-                Self::scrolled_column(&column.0, self.selection_count(index))
+            if let Some(ScrolledColumn {
+                visible_cards,
+                at_edge,
+            }) = Self::scrolled_column(&column.0, self.selection_count(index))
             {
-                if !matches!(position, Some(CardColumnScroll::AtMaxRow)) {
-                    writeln!(self.stdout, "{}{}", Fg(White), Bg(Green)).unwrap();
+                if !matches!(at_edge, Some(CardColumnScroll::AtMaxRow)) {
+                    self.set_colors(White, Green);
                     self.draw_text(col - 1, row, "↑  ↑");
                 }
-                if !matches!(position, Some(CardColumnScroll::AtMinRow)) {
-                    writeln!(self.stdout, "{}{}", Fg(White), Bg(Green)).unwrap();
+                if !matches!(at_edge, Some(CardColumnScroll::AtMinRow)) {
+                    self.set_colors(White, Green);
                     self.draw_text(
                         col - 1,
-                        row - 1 + (cards.len() as u16 * Self::COLUMNS_ROW_STEP),
+                        row - 1 + (visible_cards.len() * Self::COLUMNS_ROW_STEP),
                         "↓  ↓",
                     );
                 }
 
-                for (card, card_state) in cards {
+                for (card, card_state) in visible_cards {
                     self.display_card(card, card_state, col, row);
                     row += Self::COLUMNS_ROW_STEP;
                 }
@@ -270,9 +271,9 @@ impl Draw {
         }
     }
 
-    const PILES_INIT_COL: u16 = 48;
-    const PILES_INIT_ROW: u16 = 2;
-    const PILES_ROW_STEP: u16 = 2;
+    const PILES_INIT_COL: usize = 48;
+    const PILES_INIT_ROW: usize = 2;
+    const PILES_ROW_STEP: usize = 2;
     fn display_piles(&mut self, game_state: &GameState) {
         use color::*;
         let (init_col, init_row) = (Self::PILES_INIT_COL, Self::PILES_INIT_ROW);
@@ -281,13 +282,13 @@ impl Draw {
             if let Some(card) = pile.0.last() {
                 self.display_card(*card, CardState::FaceUp, init_col, row);
             } else {
-                writeln!(self.stdout, "{}{}", Fg(Blue), Bg(LightBlack)).unwrap();
+                self.set_colors(Blue, LightBlack);
                 self.draw_text(
                     init_col,
                     row,
                     format!(
                         "{}_",
-                        Suit::from_index(index as u8).expect("pile suit should exist")
+                        Suit::from_index(index).expect("pile suit should exist")
                     )
                     .as_str(),
                 );
@@ -297,74 +298,56 @@ impl Draw {
         }
     }
 
-    const DECK_INIT_COL: u16 = 2;
-    const DECK_INIT_ROW: u16 = 2;
+    const DECK_INIT_COL: usize = 2;
+    const DECK_INIT_ROW: usize = 2;
     fn display_deck(&mut self, game_state: &GameState) {
         use color::*;
         let (init_col, init_row) = (Self::DECK_INIT_COL, Self::DECK_INIT_ROW);
         if let Some(card) = game_state.deck_drawn.last() {
             self.display_card(*card, CardState::FaceUp, init_col, init_row);
         } else {
-            writeln!(self.stdout, "{}{}", Fg(Green), Bg(LightBlack)).unwrap();
+            self.set_colors(Green, LightBlack);
             self.draw_text(init_col, init_row, " O ");
         };
     }
 
     fn display_info(&mut self) {
         use color::*;
-        use cursor::*;
 
-        writeln!(self.stdout, "{}{}Solitext", Goto(1, 1), Fg(LightYellow),).unwrap();
-        writeln!(
-            self.stdout,
-            "{}{}h: Help  Esc: Quit",
-            Goto(32, 1),
-            Fg(LightBlack),
-        )
-        .unwrap();
+        self.set_colors(LightYellow, Self::default_bg());
+        self.draw_text(1, 1, "Solitext");
 
         self.set_colors(LightBlack, Self::default_bg());
-        let (col, row) = (2, Self::CURSOR_ROW + 1);
-        self.draw_text(col, row, "Space: Select/Move cards");
-
-        let (col, row) = (2, Self::CURSOR_ROW + 2);
-        writeln!(
-            self.stdout,
-            "{}{}{}",
-            Goto(col, row),
-            Fg(LightBlack),
-            self.context_help_message
-        )
-        .unwrap();
-
+        self.draw_text(32, 1, "h: Help  Esc: Quit");
+        self.draw_text(2, Self::CURSOR_ROW + 1, "Space: Select/Move cards");
+        self.draw_text(
+            2,
+            Self::CURSOR_ROW + 2,
+            self.context_help_message.clone().as_str(),
+        );
         if self.debug_mode {
-            let (col, row) = (2, Self::CURSOR_ROW + 3);
-            writeln!(
-                self.stdout,
-                "{}{}debug: {}",
-                Goto(col, row),
-                Fg(LightBlack),
-                self.debug_message
-            )
-            .unwrap();
+            self.draw_text(2, Self::CURSOR_ROW + 3, self.debug_message.clone().as_str());
         }
     }
 
-    fn draw_box(&mut self, col1: u16, row1: u16, col2: u16, row2: u16) {
+    fn draw_box(&mut self, col1: usize, row1: usize, col2: usize, row2: usize) {
         use std::cmp::{max, min};
         for col in min(col1, col2)..=max(col1, col2) {
             for row in min(row1, row2)..=max(row1, row2) {
-                writeln!(self.stdout, "{}█", cursor::Goto(col, row)).unwrap();
+                self.draw_text(col, row, "█");
             }
         }
     }
 
-    pub fn draw_text(&mut self, col: u16, row: u16, text: &str) {
+    pub fn draw_text(&mut self, col: usize, row: usize, text: &str) {
+        let col = u16::try_from(col).expect("column should fit in a u16");
+        let row = u16::try_from(row).expect("row should fit in a u16");
+
         writeln!(self.stdout, "{}{}", cursor::Goto(col, row), text).unwrap();
     }
 
     pub fn set_up_terminal(&mut self) {
-        write!(
+        writeln!(
             self.stdout,
             "{}{}{}{}{}",
             color::Fg(Self::default_fg()),
@@ -378,7 +361,7 @@ impl Draw {
     }
 
     pub fn restore_terminal(&mut self) {
-        write!(
+        writeln!(
             self.stdout,
             "{}{}{}{}{}",
             color::Fg(color::Reset),
@@ -392,9 +375,9 @@ impl Draw {
     }
 
     fn display_victory_message(&mut self) {
-        const CENTER: (u16, u16) = (26, 5);
-        const WIDTH_VAL: u16 = 3;
-        fn draw_box(s: &mut Draw, size: u16) {
+        const CENTER: (usize, usize) = (26, 5);
+        const WIDTH_VAL: usize = 3;
+        fn draw_box(s: &mut Draw, size: usize) {
             s.draw_box(
                 CENTER.0 - WIDTH_VAL - size,
                 CENTER.1 - size,
@@ -425,7 +408,7 @@ impl Draw {
     }
 
     pub fn display_victory(&mut self, game_state: &mut GameState) {
-        writeln!(self.stdout, "{}", clear::All).unwrap();
+        self.clear_screen();
         //just display cards
         self.display_deck(game_state);
         self.display_columns(game_state);
@@ -442,7 +425,7 @@ impl Draw {
             thread::sleep(time::Duration::from_millis(500));
         }
 
-        writeln!(self.stdout, "{}", clear::All).unwrap();
+        self.clear_screen();
         self.set_colors(Self::default_fg(), Self::default_bg());
 
         self.draw_text(1, 1, "haha you ran this program");
@@ -466,15 +449,15 @@ impl Draw {
     }
 
     pub fn display_help(&mut self, game_state: &mut GameState) {
-        writeln!(self.stdout, "{}", clear::All).unwrap();
+        self.clear_screen();
         //just display cards
         self.display_deck(game_state);
         self.display_columns(game_state);
         self.display_piles(game_state);
 
-        const CENTER: (u16, u16) = (26, 5);
-        const WIDTH_VAL: u16 = 15;
-        fn draw_box(s: &mut Draw, size: u16) {
+        const CENTER: (usize, usize) = (26, 5);
+        const WIDTH_VAL: usize = 15;
+        fn draw_box(s: &mut Draw, size: usize) {
             s.draw_box(
                 CENTER.0 - WIDTH_VAL - size,
                 CENTER.1 - size,
@@ -488,7 +471,7 @@ impl Draw {
         draw_box(self, 3);
 
         self.set_colors(color::LightBlack, color::White);
-        const INIT_TEXT: (u16, u16) = (8, 2);
+        const INIT_TEXT: (usize, usize) = (8, 2);
         let (mut col, mut row) = INIT_TEXT;
         self.draw_text(col, row, "Controls:");
         row += 1;

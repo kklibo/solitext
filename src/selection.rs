@@ -1,19 +1,15 @@
 use crate::game_state::{CardCollection, GameState};
+use std::cmp::{max, min};
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum Selection {
     Deck,
-    Column { index: u8, card_count: u8 },
-    Pile { index: u8 },
+    Column { index: usize, card_count: usize },
+    Pile { index: usize },
 }
 
 impl Selection {
-    fn card_column(index: u8, game_state: &GameState) -> Selection {
-        let card_count = if game_state.column_is_empty(index) {
-            0
-        } else {
-            1
-        };
+    fn new_column(index: usize, card_count: usize) -> Selection {
         Self::Column { index, card_count }
     }
 
@@ -50,33 +46,32 @@ impl Selection {
             Self::Column { card_count, .. } => *card_count,
             _ => 1,
         }
-        .into()
     }
 
     /// for the Left key
-    pub fn move_left(&mut self, game_state: &GameState) {
+    pub fn move_left(&mut self) {
         #[allow(clippy::assertions_on_constants)]
         {
             assert!(GameState::COLUMN_COUNT > 0);
         }
         *self = match *self {
             x @ Self::Deck => x,
-            Self::Column { index, .. } if index > 0 => Self::card_column(index - 1, game_state),
+            Self::Column { index, .. } if index > 0 => Self::new_column(index - 1, 0),
             Self::Column { .. } => Self::Deck,
-            Self::Pile { .. } => Self::card_column(GameState::COLUMN_COUNT - 1, game_state),
+            Self::Pile { .. } => Self::new_column(GameState::COLUMN_COUNT - 1, 0),
         };
     }
 
     /// for the Right key
-    pub fn move_right(&mut self, game_state: &GameState) {
+    pub fn move_right(&mut self) {
         #[allow(clippy::assertions_on_constants)]
         {
             assert!(GameState::COLUMN_COUNT > 0);
         }
         *self = match *self {
-            Self::Deck => Self::card_column(0, game_state),
+            Self::Deck => Self::new_column(0, 0),
             Self::Column { index, .. } if index < GameState::COLUMN_COUNT - 1 => {
-                Self::card_column(index + 1, game_state)
+                Self::new_column(index + 1, 0)
             }
             Self::Column { .. } => Self::Pile { index: 0 },
             x @ Self::Pile { .. } => x,
@@ -86,39 +81,35 @@ impl Selection {
     /// for the Up key
     pub fn select_up(&mut self) {
         *self = match *self {
-            x @ Self::Deck => x,
-            Self::Column {
+            Self::Deck => Self::Deck,
+            Self::Column { index, card_count } => Self::Column {
                 index,
-                mut card_count,
-            } => {
-                card_count += 1;
-                Self::Column { index, card_count }
-            }
-            Self::Pile { index } if index > 0 => Self::Pile { index: index - 1 },
-            x @ Self::Pile { .. } => x,
+                card_count: card_count + 1,
+            },
+            Self::Pile { index } => Self::Pile {
+                index: max(1, index) - 1,
+            },
         }
     }
 
     /// for the Down key
-    pub fn select_down(&mut self, game_state: &GameState) {
+    pub fn select_down(&mut self) {
         *self = match *self {
-            x @ Self::Deck => x,
-            Self::Column { index, card_count } if (card_count as usize) > 0 => Self::Column {
+            Self::Deck => Self::Deck,
+            Self::Column { index, card_count } => Self::Column {
                 index,
-                card_count: card_count - 1,
+                card_count: max(1, card_count) - 1,
             },
-            x @ Self::Column { .. } => x,
-            Self::Pile { index } if (index as usize) < game_state.card_piles.len() - 1 => {
-                Self::Pile { index: index + 1 }
-            }
-            x @ Self::Pile { .. } => x,
+            Self::Pile { index } => Self::Pile {
+                index: min(GameState::CARD_PILES_COUNT - 1, index + 1),
+            },
         }
     }
 
     pub fn apply_column_selection_rules(&mut self, game_state: &GameState, debug_mode: bool) {
         if let Self::Column { index, card_count } = *self {
             // Prevent size zero selection for non-empty column
-            if !game_state.columns[index as usize].0.is_empty() && card_count == 0 {
+            if !game_state.columns[index].0.is_empty() && card_count == 0 {
                 *self = Self::Column {
                     index,
                     card_count: 1,
@@ -128,16 +119,15 @@ impl Selection {
 
             let max_count = if debug_mode {
                 // In debug mode, allow selection of face-down cards
-                game_state.columns[index as usize].0.len()
+                game_state.columns[index].0.len()
             } else {
                 // Only allow selection of face-up cards
-                game_state.columns[index as usize].face_up_cards()
+                game_state.columns[index].face_up_cards()
             };
 
-            //todo: fix usize -> u8 conversion
             *self = Self::Column {
                 index,
-                card_count: std::cmp::min(card_count, max_count as u8),
+                card_count: min(card_count, max_count),
             }
         }
     }
@@ -151,11 +141,11 @@ impl Selection {
             Self::Deck => &mut game_state.deck_drawn,
             Self::Column { index, .. } => game_state
                 .columns
-                .get_mut(*index as usize)
+                .get_mut(*index)
                 .expect("selected card column should exist"),
             Self::Pile { index } => game_state
                 .card_piles
-                .get_mut(*index as usize)
+                .get_mut(*index)
                 .expect("selected card pile should exist"),
         }
     }

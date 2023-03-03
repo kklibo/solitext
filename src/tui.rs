@@ -1,7 +1,7 @@
 use crate::cards::Card;
 use crate::draw::Draw;
 use crate::game_logic;
-use crate::game_state::{CardCollection, GameState};
+use crate::game_state::GameState;
 use crate::selection::Selection;
 use std::io::stdin;
 use termion::event::Key;
@@ -149,10 +149,10 @@ impl Ui {
         let stdin = stdin();
         for c in stdin.keys() {
             match c.unwrap() {
-                Key::Left => self.draw.cursor.move_left(game_state),
-                Key::Right => self.draw.cursor.move_right(game_state),
+                Key::Left => self.draw.cursor.move_left(),
+                Key::Right => self.draw.cursor.move_right(),
                 Key::Up => self.draw.cursor.select_up(),
-                Key::Down => self.draw.cursor.select_down(game_state),
+                Key::Down => self.draw.cursor.select_down(),
                 Key::Home => self.draw.cursor = Selection::Deck,
                 Key::End => self.draw.cursor = Selection::Pile { index: 0 },
                 Key::Char(' ') => self.cards_action(game_state),
@@ -283,6 +283,6 @@ mod tests {
     #[test]
     fn test_selected_collection() {
         let mut a = GameState::init(Card::ordered_deck());
-        let b = Selection::Deck.selected_collection(&mut a);
+        let _b = Selection::Deck.selected_collection(&mut a);
     }
 }

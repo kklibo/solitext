@@ -15,20 +15,20 @@ pub fn victory(game_state: &GameState) -> bool {
     true
 }
 
-fn valid_move_deck_to_pile(pile_index: u8, game_state: &mut GameState) -> Result<(), ()> {
+fn valid_move_deck_to_pile(pile_index: usize, game_state: &mut GameState) -> Result<(), ()> {
     use Selection::{Deck, Pile};
     let deck_card = Deck.selected_collection(game_state).peek().ok_or(())?;
     let pile_card = Pile { index: pile_index }
         .selected_collection(game_state)
         .peek();
 
-    if deck_card.suit as u8 != pile_index {
+    if deck_card.suit as usize != pile_index {
         //wrong pile
         return Err(());
     }
 
     if let Some(pile_card) = pile_card {
-        if deck_card.rank as u8 == pile_card.rank as u8 + 1 {
+        if deck_card.rank as usize == pile_card.rank as usize + 1 {
             Ok(())
         } else {
             Err(())
@@ -42,7 +42,7 @@ fn valid_move_deck_to_pile(pile_index: u8, game_state: &mut GameState) -> Result
 
 fn valid_move_card_to_column(
     card: Card,
-    column_index: u8,
+    column_index: usize,
     game_state: &mut GameState,
 ) -> Result<(), ()> {
     use Selection::Column;
@@ -54,7 +54,7 @@ fn valid_move_card_to_column(
     .peek();
 
     if let Some(column_card) = column_card {
-        if card.rank as u8 + 1 == column_card.rank as u8
+        if card.rank as usize + 1 == column_card.rank as usize
             && card.suit.is_red() != column_card.suit.is_red()
         {
             Ok(())
@@ -68,16 +68,16 @@ fn valid_move_card_to_column(
     }
 }
 
-fn valid_move_deck_to_column(column_index: u8, game_state: &mut GameState) -> Result<(), ()> {
+fn valid_move_deck_to_column(column_index: usize, game_state: &mut GameState) -> Result<(), ()> {
     use Selection::Deck;
     let deck_card = Deck.selected_collection(game_state).peek().ok_or(())?;
     valid_move_card_to_column(deck_card, column_index, game_state)
 }
 
 fn valid_move_column_to_column(
-    from_index: u8,
-    card_count: u8,
-    to_index: u8,
+    from_index: usize,
+    card_count: usize,
+    to_index: usize,
     game_state: &mut GameState,
 ) -> Result<(), ()> {
     let cards = Selection::Column {
@@ -85,7 +85,7 @@ fn valid_move_column_to_column(
         card_count,
     }
     .selected_collection(game_state)
-    .peek_n(card_count as usize)
+    .peek_n(card_count)
     .ok_or(())?;
 
     let first_card = cards.first().copied().ok_or(())?;
@@ -93,9 +93,9 @@ fn valid_move_column_to_column(
 }
 
 fn valid_move_column_to_pile(
-    column_index: u8,
-    card_count: u8,
-    pile_index: u8,
+    column_index: usize,
+    card_count: usize,
+    pile_index: usize,
     game_state: &mut GameState,
 ) -> Result<(), ()> {
     use Selection::{Column, Pile};
@@ -111,7 +111,7 @@ fn valid_move_column_to_pile(
     .selected_collection(game_state)
     .peek()
     .ok_or(())?;
-    if column_card.suit as u8 != pile_index {
+    if column_card.suit as usize != pile_index {
         return Err(());
     }
 
@@ -120,7 +120,7 @@ fn valid_move_column_to_pile(
         .peek();
 
     if let Some(pile_card) = pile_card {
-        if column_card.rank as u8 == pile_card.rank as u8 + 1 {
+        if column_card.rank as usize == pile_card.rank as usize + 1 {
             return Ok(());
         }
     } else if column_card.rank == Rank::Ace {
@@ -131,8 +131,8 @@ fn valid_move_column_to_pile(
 }
 
 fn valid_move_pile_to_column(
-    pile_index: u8,
-    column_index: u8,
+    pile_index: usize,
+    column_index: usize,
     game_state: &mut GameState,
 ) -> Result<(), ()> {
     let card = Selection::Pile { index: pile_index }
