@@ -486,6 +486,32 @@ impl Draw {
         self.stdout.flush().unwrap();
     }
 
+    fn draw_centered_box(&mut self, width: usize, height: usize) {
+        const CENTER: (usize, usize) = (26, 5);
+        self.draw_box(
+            CENTER.0 - width / 2,
+            CENTER.1 - height / 2,
+            CENTER.0 + width / 2,
+            CENTER.1 + height / 2,
+        );
+    }
+
+    pub fn draw_text_box(&mut self, lines: &str) {
+        self.set_colors(color::LightBlue, Self::default_bg());
+        self.draw_centered_box(38, 8);
+        self.set_colors(color::White, Self::default_bg());
+        self.draw_centered_box(36, 6);
+
+        self.set_colors(color::LightBlack, color::White);
+        const INIT_TEXT: (usize, usize) = (8, 2);
+        let (col, mut row) = INIT_TEXT;
+
+        for line in lines.split('\n') {
+            self.draw_text(col, row, line);
+            row += 1;
+        }
+    }
+
     pub fn display_help(&mut self, game_state: &mut GameState) {
         self.clear_screen();
         //just display cards
@@ -493,37 +519,14 @@ impl Draw {
         self.display_columns(game_state);
         self.display_piles(game_state);
 
-        const CENTER: (usize, usize) = (26, 5);
-        const WIDTH_VAL: usize = 15;
-        fn draw_box(s: &mut Draw, size: usize) {
-            s.draw_box(
-                CENTER.0 - WIDTH_VAL - size,
-                CENTER.1 - size,
-                CENTER.0 + WIDTH_VAL + size,
-                CENTER.1 + size,
-            );
-        }
-        self.set_colors(color::LightBlue, Self::default_bg());
-        draw_box(self, 4);
-        self.set_colors(color::White, Self::default_bg());
-        draw_box(self, 3);
+        let lines = r#"Controls:
 
-        self.set_colors(color::LightBlack, color::White);
-        const INIT_TEXT: (usize, usize) = (8, 2);
-        let (mut col, mut row) = INIT_TEXT;
-        self.draw_text(col, row, "Controls:");
-        row += 1;
-        row += 1;
-        col += 1;
-        self.draw_text(col, row, "Arrow keys, Home, End: Move cursor");
-        row += 1;
-        self.draw_text(col, row, "Enter: Hit/move card to stack");
-        row += 1;
-        self.draw_text(col, row, "Space: Select/move cards");
-        row += 1;
-        self.draw_text(col, row, "x: Clear selection");
-        row += 1;
-        self.draw_text(col, row, "Esc, Ctrl+c: Quit");
+ Arrow keys, Home, End: Move cursor
+ Enter: Hit/move card to stack
+ Space: Select/move cards
+ x: Clear selection
+ Esc, Ctrl+c: Quit"#;
+        self.draw_text_box(lines);
 
         self.set_colors(Self::default_fg(), Self::default_bg());
         self.stdout.flush().unwrap();
