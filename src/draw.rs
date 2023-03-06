@@ -460,7 +460,8 @@ impl Draw {
 
     pub fn display_start_screen(&mut self) {
         self.clear_screen();
-        self.set_colors(Self::default_fg(), Self::default_bg());
+        self.set_colors(color::LightYellow, Self::default_bg());
+        self.draw_text(16, 1, "Solitext    ♥ ♠ ♦ ♣");
 
         let lines = r#"1: New Game (Draw One)
 3: New Game (Draw Three)
@@ -471,25 +472,32 @@ Esc: Quit"#;
         self.stdout.flush().unwrap();
     }
 
-    fn draw_centered_box(&mut self, width: usize, height: usize) {
+    fn centered_box_corners(width: usize, height: usize) -> (usize, usize, usize, usize) {
         const CENTER: (usize, usize) = (26, 5);
-        self.draw_box(
+        (
             CENTER.0 - width / 2,
             CENTER.1 - height / 2,
             CENTER.0 + width / 2,
             CENTER.1 + height / 2,
-        );
+        )
+    }
+
+    fn draw_centered_box(&mut self, width: usize, height: usize) {
+        let (col1, row1, col2, row2) = Self::centered_box_corners(width, height);
+        self.draw_box(col1, row1, col2, row2);
     }
 
     pub fn draw_text_box(&mut self, lines: &str) {
+        let height = lines.split('\n').count();
+
+        const WIDTH: usize = 38;
         self.set_colors(color::LightBlue, Self::default_bg());
-        self.draw_centered_box(38, 8);
+        self.draw_centered_box(WIDTH, height + 2);
         self.set_colors(color::White, Self::default_bg());
-        self.draw_centered_box(36, 6);
+        self.draw_centered_box(WIDTH - 2, height);
 
         self.set_colors(color::LightBlack, color::White);
-        const INIT_TEXT: (usize, usize) = (8, 2);
-        let (col, mut row) = INIT_TEXT;
+        let (col, mut row, _, _) = Self::centered_box_corners(WIDTH - 2, height);
 
         for line in lines.split('\n') {
             self.draw_text(col, row, line);
