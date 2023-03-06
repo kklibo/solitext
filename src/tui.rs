@@ -13,7 +13,7 @@ pub struct Ui {
 }
 
 enum UiState {
-    Intro,
+    StartScreen,
     NewGame,
     Game,
     Victory,
@@ -23,7 +23,7 @@ enum UiState {
 impl Ui {
     pub fn new() -> Self {
         Self {
-            ui_state: UiState::Intro,
+            ui_state: UiState::StartScreen,
             draw: Draw::new(),
         }
     }
@@ -177,9 +177,22 @@ impl Ui {
         }
     }
 
-    fn run_intro(&mut self) {
-        self.draw.display_intro();
-        self.ui_state = UiState::NewGame;
+    fn run_start_screen(&mut self) {
+        self.draw.display_start_screen();
+        let stdin = stdin();
+        for c in stdin.keys() {
+            match c.unwrap() {
+                Key::Char('1') => {
+                    self.ui_state = UiState::NewGame;
+                    break;
+                }
+                Key::Esc | Key::Ctrl('c') => {
+                    self.ui_state = UiState::Quit;
+                    break;
+                }
+                _ => {}
+            }
+        }
     }
 
     fn run_victory(&mut self, game_state: &mut GameState) {
@@ -217,7 +230,7 @@ impl Ui {
 
         loop {
             match self.ui_state {
-                UiState::Intro => self.run_intro(),
+                UiState::StartScreen => self.run_start_screen(),
                 UiState::NewGame => self.run_new_game(game_state),
                 UiState::Game => self.run_game(game_state),
                 UiState::Victory => self.run_victory(game_state),

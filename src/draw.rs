@@ -458,29 +458,14 @@ impl Draw {
         self.stdout.flush().unwrap();
     }
 
-    pub fn display_intro(&mut self) {
-        fn pause() {
-            thread::sleep(time::Duration::from_millis(500));
-        }
-
+    pub fn display_start_screen(&mut self) {
         self.clear_screen();
         self.set_colors(Self::default_fg(), Self::default_bg());
 
-        self.draw_text(1, 1, "haha you ran this program");
-        pause();
-        pause();
-        pause();
-        self.draw_text(10, 3, "NOW");
-        pause();
-        self.draw_text(30, 5, "YOU");
-        pause();
-        self.draw_text(12, 7, "MUST");
-        pause();
-        self.draw_text(32, 9, "PLAY");
-        pause();
-        pause();
-        pause();
-        pause();
+        let lines = r#"1: New Game (Draw One)
+3: New Game (Draw Three)
+Esc: Quit"#;
+        self.draw_text_box(lines);
 
         self.set_colors(Self::default_fg(), Self::default_bg());
         self.stdout.flush().unwrap();
