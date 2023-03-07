@@ -165,7 +165,12 @@ impl Ui {
                 Key::Char('z') if self.draw.debug_mode => self.debug_check_valid(game_state),
                 Key::Char('d') => self.draw.debug_mode = !self.draw.debug_mode,
                 Key::Char('h') => self.run_help(game_state),
-                Key::Esc | Key::Ctrl('c') => {
+                Key::Esc => {
+                    if self.run_game_menu(game_state) {
+                        break;
+                    }
+                }
+                Key::Ctrl('c') => {
                     self.ui_state = UiState::Quit;
                     break;
                 }
@@ -197,6 +202,33 @@ impl Ui {
                 _ => {}
             }
         }
+    }
+
+    /// Returns: true IFF UiState has changed
+    fn run_game_menu(&mut self, game_state: &mut GameState) -> bool {
+        self.draw.display_game_menu(game_state);
+        let stdin = stdin();
+        for c in stdin.keys() {
+            match c.unwrap() {
+                Key::Char('1') => {
+                    self.ui_state = UiState::NewGame(GameMode::DrawOne);
+                    return true;
+                }
+                Key::Char('3') => {
+                    self.ui_state = UiState::NewGame(GameMode::DrawThree);
+                    return true;
+                }
+                Key::Char('q') | Key::Ctrl('c') => {
+                    self.ui_state = UiState::Quit;
+                    return true;
+                }
+                Key::Esc => {
+                    return false;
+                }
+                _ => {}
+            }
+        }
+        false
     }
 
     fn run_victory(&mut self, game_state: &mut GameState) {

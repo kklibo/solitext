@@ -356,7 +356,7 @@ impl Draw {
         self.draw_text(1, 1, "Solitext");
 
         self.set_colors(LightBlack, Self::default_bg());
-        self.draw_text(32, 1, "h: Help  Esc: Quit");
+        self.draw_text(32, 1, "h: Help  Esc: Menu");
         self.draw_text(2, Self::CURSOR_ROW + 1, "Space: Select/Move cards");
         self.draw_text(
             2,
@@ -472,6 +472,24 @@ Esc: Quit"#;
         self.stdout.flush().unwrap();
     }
 
+    pub fn display_game_menu(&mut self, game_state: &mut GameState) {
+        self.clear_screen();
+        //just display cards
+        self.display_deck(game_state);
+        self.display_columns(game_state);
+        self.display_piles(game_state);
+
+        let lines = r#"1: New Game (Draw One)
+3: New Game (Draw Three)
+r: Restart current game
+q: Quit
+Esc: Return to game"#;
+        self.draw_text_box(lines);
+
+        self.set_colors(Self::default_fg(), Self::default_bg());
+        self.stdout.flush().unwrap();
+    }
+
     fn centered_box_corners(width: usize, height: usize) -> (usize, usize, usize, usize) {
         const CENTER: (usize, usize) = (26, 5);
         (
@@ -518,7 +536,7 @@ Esc: Quit"#;
  Enter: Hit/move card to stack
  Space: Select/move cards
  x: Clear selection
- Esc, Ctrl+c: Quit"#;
+ Ctrl+c: Quit"#;
         self.draw_text_box(lines);
 
         self.set_colors(Self::default_fg(), Self::default_bg());
