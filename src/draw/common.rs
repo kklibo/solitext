@@ -1,6 +1,8 @@
 //! Common drawing code.
 
-use super::*;
+use super::Draw;
+use std::io::Write;
+use termion::{clear, color, cursor};
 
 impl Draw {
     pub(crate) fn clear_screen(&mut self) {
