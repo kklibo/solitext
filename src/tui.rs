@@ -8,6 +8,8 @@ use termion::event::Key;
 use termion::input::TermRead;
 
 pub struct Ui {
+    /// The deck used to seed the current game (if any)
+    game_deck: Option<Vec<Card>>,
     ui_state: UiState,
     draw: Draw,
 }
@@ -15,6 +17,7 @@ pub struct Ui {
 enum UiState {
     StartScreen,
     NewGame(GameMode),
+    RestartGame,
     Game,
     Victory,
     Quit,
@@ -23,6 +26,7 @@ enum UiState {
 impl Ui {
     pub fn new() -> Self {
         Self {
+            game_deck: None,
             ui_state: UiState::StartScreen,
             draw: Draw::new(),
         }
@@ -218,6 +222,10 @@ impl Ui {
                     self.ui_state = UiState::NewGame(GameMode::DrawThree);
                     return true;
                 }
+                Key::Char('r') => {
+                    self.ui_state = UiState::RestartGame;
+                    return true;
+                }
                 Key::Char('q') | Key::Ctrl('c') => {
                     self.ui_state = UiState::Quit;
                     return true;
@@ -251,7 +259,21 @@ impl Ui {
     }
 
     pub fn run_new_game(&mut self, game_state: &mut GameState, game_mode: GameMode) {
-        *game_state = GameState::init(Card::shuffled_deck());
+        let game_deck = Card::shuffled_deck();
+        self.game_deck = Some(game_deck.clone());
+        *game_state = GameState::init(game_deck);
+        game_state.game_mode = game_mode;
+        self.reset_for_new_game();
+        self.ui_state = UiState::Game;
+    }
+
+    pub fn run_restart_game(&mut self, game_state: &mut GameState) {
+        let game_mode = game_state.game_mode;
+        *game_state = GameState::init(
+            self.game_deck
+                .clone()
+                .expect("deck for current game should exist"),
+        );
         game_state.game_mode = game_mode;
         self.reset_for_new_game();
         self.ui_state = UiState::Game;
@@ -269,6 +291,7 @@ impl Ui {
             match self.ui_state {
                 UiState::StartScreen => self.run_start_screen(),
                 UiState::NewGame(game_mode) => self.run_new_game(game_state, game_mode),
+                UiState::RestartGame => self.run_restart_game(game_state),
                 UiState::Game => self.run_game(game_state),
                 UiState::Victory => self.run_victory(game_state),
                 UiState::Quit => break,
