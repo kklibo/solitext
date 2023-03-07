@@ -167,8 +167,15 @@ impl GameState {
             self.deck_drawn.clear();
         }
 
-        if let Some(card) = self.deck.pop() {
-            self.deck_drawn.push(card);
+        let count = match self.game_mode {
+            GameMode::DrawOne => 1,
+            GameMode::DrawThree => 3,
+        };
+
+        for _ in 0..count {
+            if let Some(card) = self.deck.pop() {
+                self.deck_drawn.push(card);
+            }
         }
     }
 

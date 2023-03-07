@@ -186,6 +186,10 @@ impl Ui {
                     self.ui_state = UiState::NewGame(GameMode::DrawOne);
                     break;
                 }
+                Key::Char('3') => {
+                    self.ui_state = UiState::NewGame(GameMode::DrawThree);
+                    break;
+                }
                 Key::Esc | Key::Ctrl('c') => {
                     self.ui_state = UiState::Quit;
                     break;
