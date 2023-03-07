@@ -10,3 +10,9 @@ rand = "0.8.5"
 strum = { version = "0.24.1", features = ["derive"] }
 termion = "2.0.1"
 test-case = "3.0.0"
+
+[profile.release]
+strip = true
+opt-level = "z"
+lto = true
+codegen-units = 1
