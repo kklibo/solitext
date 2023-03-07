@@ -458,32 +458,51 @@ impl Draw {
         self.stdout.flush().unwrap();
     }
 
-    pub fn display_intro(&mut self) {
-        fn pause() {
-            thread::sleep(time::Duration::from_millis(500));
-        }
-
+    pub fn display_start_screen(&mut self) {
         self.clear_screen();
-        self.set_colors(Self::default_fg(), Self::default_bg());
+        self.set_colors(color::LightYellow, Self::default_bg());
+        self.draw_text(16, 1, "Solitext    ♥ ♠ ♦ ♣");
 
-        self.draw_text(1, 1, "haha you ran this program");
-        pause();
-        pause();
-        pause();
-        self.draw_text(10, 3, "NOW");
-        pause();
-        self.draw_text(30, 5, "YOU");
-        pause();
-        self.draw_text(12, 7, "MUST");
-        pause();
-        self.draw_text(32, 9, "PLAY");
-        pause();
-        pause();
-        pause();
-        pause();
+        let lines = r#"1: New Game (Draw One)
+3: New Game (Draw Three)
+Esc: Quit"#;
+        self.draw_text_box(lines);
 
         self.set_colors(Self::default_fg(), Self::default_bg());
         self.stdout.flush().unwrap();
+    }
+
+    fn centered_box_corners(width: usize, height: usize) -> (usize, usize, usize, usize) {
+        const CENTER: (usize, usize) = (26, 5);
+        (
+            CENTER.0 - width / 2,
+            CENTER.1 - height / 2,
+            CENTER.0 + width / 2,
+            CENTER.1 + height / 2,
+        )
+    }
+
+    fn draw_centered_box(&mut self, width: usize, height: usize) {
+        let (col1, row1, col2, row2) = Self::centered_box_corners(width, height);
+        self.draw_box(col1, row1, col2, row2);
+    }
+
+    pub fn draw_text_box(&mut self, lines: &str) {
+        let height = lines.split('\n').count();
+
+        const WIDTH: usize = 38;
+        self.set_colors(color::LightBlue, Self::default_bg());
+        self.draw_centered_box(WIDTH, height + 2);
+        self.set_colors(color::White, Self::default_bg());
+        self.draw_centered_box(WIDTH - 2, height);
+
+        self.set_colors(color::LightBlack, color::White);
+        let (col, mut row, _, _) = Self::centered_box_corners(WIDTH - 2, height);
+
+        for line in lines.split('\n') {
+            self.draw_text(col, row, line);
+            row += 1;
+        }
     }
 
     pub fn display_help(&mut self, game_state: &mut GameState) {
@@ -493,37 +512,14 @@ impl Draw {
         self.display_columns(game_state);
         self.display_piles(game_state);
 
-        const CENTER: (usize, usize) = (26, 5);
-        const WIDTH_VAL: usize = 15;
-        fn draw_box(s: &mut Draw, size: usize) {
-            s.draw_box(
-                CENTER.0 - WIDTH_VAL - size,
-                CENTER.1 - size,
-                CENTER.0 + WIDTH_VAL + size,
-                CENTER.1 + size,
-            );
-        }
-        self.set_colors(color::LightBlue, Self::default_bg());
-        draw_box(self, 4);
-        self.set_colors(color::White, Self::default_bg());
-        draw_box(self, 3);
+        let lines = r#"Controls:
 
-        self.set_colors(color::LightBlack, color::White);
-        const INIT_TEXT: (usize, usize) = (8, 2);
-        let (mut col, mut row) = INIT_TEXT;
-        self.draw_text(col, row, "Controls:");
-        row += 1;
-        row += 1;
-        col += 1;
-        self.draw_text(col, row, "Arrow keys, Home, End: Move cursor");
-        row += 1;
-        self.draw_text(col, row, "Enter: Hit/move card to stack");
-        row += 1;
-        self.draw_text(col, row, "Space: Select/move cards");
-        row += 1;
-        self.draw_text(col, row, "x: Clear selection");
-        row += 1;
-        self.draw_text(col, row, "Esc, Ctrl+c: Quit");
+ Arrow keys, Home, End: Move cursor
+ Enter: Hit/move card to stack
+ Space: Select/move cards
+ x: Clear selection
+ Esc, Ctrl+c: Quit"#;
+        self.draw_text_box(lines);
 
         self.set_colors(Self::default_fg(), Self::default_bg());
         self.stdout.flush().unwrap();

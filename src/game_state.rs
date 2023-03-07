@@ -14,8 +14,16 @@ pub struct CardColumn(pub Vec<(Card, CardState)>);
 #[derive(Debug, Default, Clone, Eq, PartialEq)]
 pub struct CardPile(pub Vec<Card>);
 
+#[derive(Debug, Default, Copy, Clone, Eq, PartialEq)]
+pub enum GameMode {
+    #[default]
+    DrawOne,
+    DrawThree,
+}
+
 #[derive(Debug, Default, Clone, Eq, PartialEq)]
 pub struct GameState {
+    pub game_mode: GameMode,
     pub deck: Vec<Card>,
     pub deck_drawn: Vec<Card>,
     pub columns: [CardColumn; Self::COLUMN_COUNT],
@@ -144,6 +152,7 @@ impl GameState {
         }
 
         Self {
+            game_mode: Default::default(),
             deck,
             deck_drawn: Default::default(),
             columns,
@@ -158,8 +167,15 @@ impl GameState {
             self.deck_drawn.clear();
         }
 
-        if let Some(card) = self.deck.pop() {
-            self.deck_drawn.push(card);
+        let count = match self.game_mode {
+            GameMode::DrawOne => 1,
+            GameMode::DrawThree => 3,
+        };
+
+        for _ in 0..count {
+            if let Some(card) = self.deck.pop() {
+                self.deck_drawn.push(card);
+            }
         }
     }
 
