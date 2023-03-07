@@ -1,7 +1,7 @@
 use crate::cards::Card;
 use crate::draw::Draw;
 use crate::game_logic;
-use crate::game_state::GameState;
+use crate::game_state::{GameMode, GameState};
 use crate::selection::Selection;
 use std::io::stdin;
 use termion::event::Key;
@@ -14,7 +14,7 @@ pub struct Ui {
 
 enum UiState {
     StartScreen,
-    NewGame,
+    NewGame(GameMode),
     Game,
     Victory,
     Quit,
@@ -183,7 +183,7 @@ impl Ui {
         for c in stdin.keys() {
             match c.unwrap() {
                 Key::Char('1') => {
-                    self.ui_state = UiState::NewGame;
+                    self.ui_state = UiState::NewGame(GameMode::DrawOne);
                     break;
                 }
                 Key::Esc | Key::Ctrl('c') => {
@@ -202,7 +202,7 @@ impl Ui {
         for c in stdin.keys() {
             match c.unwrap() {
                 Key::Char('y') => {
-                    self.ui_state = UiState::NewGame;
+                    self.ui_state = UiState::NewGame(game_state.game_mode);
                     break;
                 }
                 Key::Char('n') | Key::Esc | Key::Ctrl('c') => {
@@ -214,8 +214,9 @@ impl Ui {
         }
     }
 
-    pub fn run_new_game(&mut self, game_state: &mut GameState) {
+    pub fn run_new_game(&mut self, game_state: &mut GameState, game_mode: GameMode) {
         *game_state = GameState::init(Card::shuffled_deck());
+        game_state.game_mode = game_mode;
         self.reset_for_new_game();
         self.ui_state = UiState::Game;
     }
@@ -231,7 +232,7 @@ impl Ui {
         loop {
             match self.ui_state {
                 UiState::StartScreen => self.run_start_screen(),
-                UiState::NewGame => self.run_new_game(game_state),
+                UiState::NewGame(game_mode) => self.run_new_game(game_state, game_mode),
                 UiState::Game => self.run_game(game_state),
                 UiState::Victory => self.run_victory(game_state),
                 UiState::Quit => break,
