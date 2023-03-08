@@ -4,6 +4,8 @@ use super::Draw;
 use crate::cards::Card;
 use crate::game_state::{CardState, GameState};
 use crate::selection::Selection;
+use std::cmp::min;
+use termion::color::*;
 
 enum CardColumnScroll {
     AtMaxRow,
@@ -21,9 +23,7 @@ impl Draw {
     pub(super) const COLUMNS_COL_STEP: usize = 5;
     pub(super) const COLUMNS_ROW_STEP: usize = 1;
     pub(super) fn display_columns(&mut self, game_state: &GameState) {
-        use termion::color::*;
-        let (init_col, init_row) = (Self::COLUMNS_INIT_COL, Self::COLUMNS_INIT_ROW);
-        let mut col = init_col;
+        let (mut col, init_row) = (Self::COLUMNS_INIT_COL, Self::COLUMNS_INIT_ROW);
         for (index, column) in game_state.columns.iter().enumerate() {
             let mut row = init_row;
             if let Some(ScrolledColumn {
@@ -64,18 +64,17 @@ impl Draw {
         cards: usize,
         selected: usize,
     ) -> Option<(usize, Option<CardColumnScroll>)> {
-        use std::cmp::min;
         if cards <= Self::COLUMN_MAX_VISIBLE_CARDS {
             return None;
         }
 
-        let range = cards - Self::COLUMN_MAX_VISIBLE_CARDS;
-        let a = cards - min(selected, cards);
-        let offset = min(a, range);
+        let max_offset = cards - Self::COLUMN_MAX_VISIBLE_CARDS;
+        let unselected = cards - min(selected, cards);
+        let offset = min(unselected, max_offset);
 
         let position = match offset {
             0 => Some(CardColumnScroll::AtMaxRow),
-            x if x == range => Some(CardColumnScroll::AtMinRow),
+            x if x == max_offset => Some(CardColumnScroll::AtMinRow),
             _ => None,
         };
 
@@ -127,7 +126,7 @@ impl Draw {
             .expect("should not select nonexistent cards");
 
         // Don't draw past the end of the column
-        let upper = std::cmp::min(
+        let upper = min(
             upper,
             Self::COLUMNS_INIT_ROW + Self::COLUMNS_ROW_STEP * Self::COLUMN_MAX_VISIBLE_CARDS,
         );

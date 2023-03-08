@@ -16,7 +16,7 @@ impl Draw {
         self.display_piles(game_state);
 
         self.set_colors(color::Blue, Self::default_bg());
-        self.display_column_selection_cursor();
+        self.display_collection_selection_cursor();
 
         self.set_colors(Self::default_fg(), color::LightGreen);
         self.display_card_selection_cursor(self.cursor, game_state);
@@ -40,7 +40,7 @@ impl Draw {
     }
 
     pub(super) const CURSOR_ROW: usize = 10;
-    fn display_column_selection_cursor(&mut self) {
+    fn display_collection_selection_cursor(&mut self) {
         let col = Self::selection_col(self.cursor);
         self.draw_text(col, Self::CURSOR_ROW, "█↑█");
     }

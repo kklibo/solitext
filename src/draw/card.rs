@@ -3,6 +3,7 @@
 use super::Draw;
 use crate::cards::Card;
 use crate::game_state::CardState;
+use termion::color::*;
 
 impl Draw {
     pub(crate) fn display_card(
@@ -12,7 +13,6 @@ impl Draw {
         col: usize,
         row: usize,
     ) {
-        use termion::color::*;
         let text = match card_state {
             CardState::FaceUp => {
                 if card.suit.is_red() {
