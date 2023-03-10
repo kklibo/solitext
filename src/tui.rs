@@ -68,23 +68,31 @@ impl Ui {
         }
     }
 
+    fn move_to_pile(from: Selection, game_state: &mut GameState) {
+        for i in 0..4 {
+            let to = Selection::Pile { index: i };
+            if game_logic::valid_move(from, to, game_state).is_ok() {
+                let _ = Self::move_cards(from, to, game_state);
+                break;
+            }
+        }
+    }
+
     fn enter_key_action(&mut self, game_state: &mut GameState) {
-        if matches!(self.draw.cursor, Selection::Deck) {
-            game_state.deck_hit();
+        if let Selection::Deck = self.draw.cursor {
+            if let Some(Selection::Deck) = self.draw.selected {
+                Self::move_to_pile(Selection::Deck, game_state);
+            } else {
+                game_state.deck_hit();
+            }
         } else if let Selection::Column { index, .. } = self.draw.cursor {
-            let from = Selection::Column {
+            self.draw.cursor = Selection::Column {
                 index,
                 card_count: 1,
             };
-            //todo: refactor this
-            for i in 0..4 {
-                let to = Selection::Pile { index: i };
-                if game_logic::valid_move(from, to, game_state).is_ok() {
-                    let _ = Self::move_cards(from, to, game_state);
-                    break;
-                }
-            }
+            Self::move_to_pile(self.draw.cursor, game_state);
         }
+        self.draw.selected = None;
     }
 
     fn debug_unchecked_cards_action(&mut self, game_state: &mut GameState) {
@@ -114,9 +122,11 @@ impl Ui {
     }
 
     fn set_context_help_message(&mut self) {
-        self.draw.context_help_message = match self.draw.cursor {
-            Selection::Deck => "Enter: Hit",
-            Selection::Column { .. } => "Enter: Try to Move to Stack",
+        self.draw.context_help_message = match (self.draw.cursor, self.draw.selected) {
+            (Selection::Column { .. }, _) | (Selection::Deck, Some(Selection::Deck)) => {
+                "Enter: Try to Move to Stack"
+            }
+            (Selection::Deck, _) => "Enter: Hit",
             _ => "",
         }
         .to_string()

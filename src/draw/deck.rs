@@ -1,13 +1,20 @@
 //! Draws the stock & wastepile decks.
 
 use super::Draw;
-use crate::game_state::{CardState, GameState};
+use crate::game_state::{CardState, GameMode, GameState};
 use termion::color;
 
 impl Draw {
     pub(super) fn draw_deck_selection_cursor(&mut self, col: usize, row: usize) {
         self.draw_text(col + 2, row, "◂");
         self.draw_text(col - 2, row, "▸");
+    }
+
+    fn max_visible_cards(game_mode: GameMode) -> usize {
+        match game_mode {
+            GameMode::DrawOne => 1,
+            GameMode::DrawThree => Self::DECK_DRAWN_MAX_DISPLAY_CARDS,
+        }
     }
 
     pub(super) const DECK_INIT_COL: usize = 2;
@@ -25,27 +32,20 @@ impl Draw {
             self.draw_text(col, row, " O ");
         };
 
-        // display up to DECK_DRAWN_MAX_DISPLAY_CARDS cards from the top of the drawn pile
+        let max_cards = Self::max_visible_cards(game_state.game_mode);
+
+        // display up to `max_cards` cards from the top of the drawn pile
         row += Self::DECK_DRAWN_STEP;
-        for card in game_state
-            .deck_drawn
-            .iter()
-            .rev()
-            .take(Self::DECK_DRAWN_MAX_DISPLAY_CARDS)
-            .rev()
-        {
+        for card in game_state.deck_drawn.iter().rev().take(max_cards).rev() {
             self.display_card(*card, CardState::FaceUp, col, row);
             row += Self::DECK_ROW_STEP;
         }
     }
 
     pub(super) fn deck_selection_cursor_row(game_state: &GameState) -> Option<usize> {
-        let displayed_cards = game_state
-            .deck_drawn
-            .iter()
-            .take(Self::DECK_DRAWN_MAX_DISPLAY_CARDS)
-            .count();
+        let max_cards = Self::max_visible_cards(game_state.game_mode);
 
+        let displayed_cards = game_state.deck_drawn.iter().take(max_cards).count();
         if displayed_cards > 0 {
             Some(
                 Self::DECK_INIT_ROW
