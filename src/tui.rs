@@ -86,12 +86,13 @@ impl Ui {
                 game_state.deck_hit();
             }
         } else if let Selection::Column { index, .. } = self.draw.cursor {
-            let from = Selection::Column {
+            self.draw.cursor = Selection::Column {
                 index,
                 card_count: 1,
             };
-            Self::move_to_pile(from, game_state);
+            Self::move_to_pile(self.draw.cursor, game_state);
         }
+        self.draw.selected = None;
     }
 
     fn debug_unchecked_cards_action(&mut self, game_state: &mut GameState) {
